@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Architecture review — orderEngine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      .seam { stroke-dasharray: 4 4; }
+      .leak { stroke: #dc2626; }
+      .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .badge { display: inline-flex; align-items: center; padding: 0.15rem 0.6rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; }
+      .badge-strong { background: #d1fae5; color: #065f46; }
+      .badge-explore { background: #fef3c7; color: #92400e; }
+      .badge-speculative { background: #e2e8f0; color: #334155; }
+      .tag { display: inline-flex; align-items: center; padding: 0.15rem 0.5rem; border-radius: 0.35rem; font-size: 0.7rem; background: #eef2ff; color: #3730a3; }
+      .iface-bar { border-radius: 0.25rem; }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <main class="max-w-5xl mx-auto px-6 py-12 space-y-14">
+      <header class="space-y-3 border-b border-slate-200 pb-6">
+        <h1 class="font-serif text-3xl">Architecture review — orderEngine</h1>
+        <p class="text-sm text-slate-500">2026-09-07 · scoped to the Rank DB migration hot spot (AccessGuard / rank lookup) and the core/orchestrator layer</p>
+        <div class="flex flex-wrap gap-4 pt-2 text-xs text-slate-600">
+          <span class="flex items-center gap-2"><span class="inline-block w-4 h-3 border border-slate-500"></span> module</span>
+          <span class="flex items-center gap-2"><span class="inline-block w-4 border-t-2 border-dashed border-slate-500"></span> seam</span>
+          <span class="flex items-center gap-2"><span class="inline-block w-4 border-t-2 border-red-600"></span> leakage</span>
+          <span class="flex items-center gap-2"><span class="inline-block w-4 h-3 deep"></span> deep module</span>
+        </div>
+      </header>
+
+      <section id="candidates" class="space-y-14">
+
+        <!-- Candidate 1 -->
+        <article id="candidate-1" class="space-y-4">
+          <h2 class="font-serif text-xl">1. Collapse the registration-triage gate into AccessGuard</h2>
+          <div class="flex gap-2">
+            <span class="badge badge-strong">Strong</span>
+            <span class="tag">in-process</span>
+          </div>
+          <p class="font-mono text-sm text-slate-600">query/registrationrequests/RegistrationRequestListQueryService.java:257-260 · core/orchestrator/RegistrationAssignmentOrchestrationService.java:102-110 · security/AccessGuard.java</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">Before</p>
+              <pre class="mermaid">
+flowchart TB
+  RA["RegistrationAssignmentOrchestrationService"] --> AG["AccessGuard.hasPermission"]
+  AG --> GT[("department_rank_permissions")]
+  RL["RegistrationRequestListQueryService"] -.->|leak| INLINE["inline: SALES + LEAD string check"]
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#dc2626,fill:#fef2f2;
+  class INLINE,RL leak
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">After</p>
+              <pre class="mermaid">
+flowchart TB
+  RA["RegistrationAssignmentOrchestrationService"] --> AG["AccessGuard.hasPermission"]
+  RL["RegistrationRequestListQueryService"] --> AG
+  AG --> GT[("department_rank_permissions")]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class AG deep
+              </pre>
+            </div>
+          </div>
+          <p><strong>Problem:</strong> the interface AccessGuard already owns for this rule (a single permission question) is bypassed by a second, hand-rolled adapter reading raw Caller fields.</p>
+          <p><strong>Solution:</strong> replace the inline SALES/LEAD check with <code>accessGuard.hasPermission(caller, PermissionCode.MANAGE_REGISTRATION_ASSIGNMENT)</code>.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Locality: one grant table, one place a rank change is honored</li>
+            <li>Leverage: one interface, two call sites</li>
+            <li>Deletes a duplicated adapter, not just a line of code</li>
+          </ul>
+        </article>
+
+        <!-- Candidate 2 -->
+        <article id="candidate-2" class="space-y-4">
+          <h2 class="font-serif text-xl">2. Deepen the disable → revoke → revoke sequence</h2>
+          <div class="flex gap-2">
+            <span class="badge badge-strong">Strong</span>
+            <span class="tag">in-process</span>
+          </div>
+          <p class="font-mono text-sm text-slate-600">core/orchestrator/ClientDeletionOrchestrationService.java:69-74 · ClientForcedLogoutOrchestrationService.java:52-55 · CompanyUserRevocationOrchestrationService.java:146-153</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">Before — 3 adapters, same sequence</p>
+              <pre class="mermaid">
+flowchart TB
+  A1["ClientDeletionOrchestrationService"] --> D1["disableAccount"]
+  A1 --> S1["revokeAllSessions"]
+  A1 --> V1["revokeAllDevices"]
+  A2["ClientForcedLogoutOrchestrationService"] --> S2["revokeAllSessions"]
+  A2 --> V2["revokeAllDevices"]
+  A3["CompanyUserRevocationOrchestrationService"] --> D3["disableAccount"]
+  A3 --> S3["revokeAllSessions"]
+  A3 --> V3["revokeAllDevices"]
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">After — one deep module</p>
+              <pre class="mermaid">
+flowchart TB
+  A1["ClientDeletionOrchestrationService"] --> R["AccountRevocation"]
+  A2["ClientForcedLogoutOrchestrationService"] --> R
+  A3["CompanyUserRevocationOrchestrationService"] --> R
+  R --> D["disableAccount"]
+  R --> S["revokeAllSessions"]
+  R --> V["revokeAllDevices"]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class R deep
+              </pre>
+            </div>
+          </div>
+          <p><strong>Problem:</strong> three orchestrators each reimplement the same three-call sequence; each class's own javadoc already names the others as "structurally identical."</p>
+          <p><strong>Solution:</strong> deepen one module (e.g. an <code>AccountRevocation</code> collaborator) that takes an identity + a "disable, or not" flag and owns the ordering internally.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Deletion test passes 3/3: removing any copy doesn't remove the need elsewhere</li>
+            <li>Locality: sequencing bugs fixed once, not three times</li>
+            <li>Interface shrinks to one call per orchestrator</li>
+          </ul>
+        </article>
+
+        <!-- Candidate 3 -->
+        <article id="candidate-3" class="space-y-4">
+          <h2 class="font-serif text-xl">3. Extract the 403-vs-404 request-existence oracle</h2>
+          <div class="flex gap-2">
+            <span class="badge badge-explore">Worth exploring</span>
+            <span class="tag">in-process</span>
+          </div>
+          <p class="font-mono text-sm text-slate-600">core/orchestrator/CompanyOnboardingOrchestrationService.java:196-201 · RegistrationVerificationOrchestrationService.java:96-102</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">Before</p>
+              <pre class="mermaid">
+flowchart TB
+  O1["CompanyOnboardingOrchestrationService.resolveRequest"] --> B1{"platformAdmin?"}
+  B1 -->|yes| G1["getByUuid"]
+  B1 -->|no| F1["findByUuidIfAssignedTo(...).orElseThrow(404)"]
+  O2["RegistrationVerificationOrchestrationService.listSteps"] --> B2{"platformAdmin?"}
+  B2 -->|yes| G2["getByUuid"]
+  B2 -->|no| F2["findByUuidIfAssignedTo(...).orElseThrow(404)"]
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">After</p>
+              <pre class="mermaid">
+flowchart TB
+  O1["CompanyOnboardingOrchestrationService"] --> OR["RequestExistenceOracle"]
+  O2["RegistrationVerificationOrchestrationService"] --> OR
+  OR --> B{"platformAdmin?"}
+  B -->|yes| G["getByUuid"]
+  B -->|no| F["findByUuidIfAssignedTo(...).orElseThrow(404)"]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class OR deep
+              </pre>
+            </div>
+          </div>
+          <p><strong>Problem:</strong> the same "collapse missing-uuid and not-assigned-to-caller into one 404" branch is copied byte-for-byte, both citing the same originating fix.</p>
+          <p><strong>Solution:</strong> deepen a shared helper (candidate seam: <code>RegistrationRequestGetterService</code>) that owns the branch once.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Locality: one place encodes the 403-vs-404 decision</li>
+            <li>Leverage: reusable across any future orchestrator with the same oracle need</li>
+          </ul>
+        </article>
+
+        <!-- Candidate 4 -->
+        <article id="candidate-4" class="space-y-4">
+          <h2 class="font-serif text-xl">4. Give the menu manifest a seam into AccessGuard</h2>
+          <div class="flex gap-2">
+            <span class="badge badge-explore">Worth exploring</span>
+            <span class="tag">in-process</span>
+          </div>
+          <p class="font-mono text-sm text-slate-600">query/menu/MenuManifestQueryService.java:115-118 · security/AccessGuard.java · core/department/service/{RankGetterService,DepartmentGetterService}.java</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">Before</p>
+              <pre class="mermaid">
+flowchart TB
+  AG["AccessGuard.resolve/hasPermission"] --> RG["RankGetterService"]
+  AG --> DG["DepartmentGetterService"]
+  MM["MenuManifestQueryService"] -.->|leak| RG
+  MM -.->|leak| DG
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#dc2626,fill:#fef2f2;
+  class MM leak
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">After</p>
+              <pre class="mermaid">
+flowchart TB
+  AG["AccessGuard.listPermissionCodes(Caller)"] --> RG["RankGetterService"]
+  AG --> DG["DepartmentGetterService"]
+  MM["MenuManifestQueryService"] --> AG
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class AG deep
+              </pre>
+            </div>
+          </div>
+          <p><strong>Problem:</strong> no seam exists for "give me this caller's permission codes," so the menu manifest independently recomposes the same rankId → rankCode → permissions path AccessGuard already walks.</p>
+          <p><strong>Solution:</strong> add <code>AccessGuard.listPermissionCodes(Caller)</code>; route the menu manifest and the platform-admin catalogue special case through it.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Leverage: one composition, two callers</li>
+            <li>Closes the only remaining path around AccessGuard found in this review</li>
+          </ul>
+        </article>
+
+        <!-- Candidate 5 -->
+        <article id="candidate-5" class="space-y-4">
+          <h2 class="font-serif text-xl">5. Split WorkflowTemplateLifecycleService's interface</h2>
+          <div class="flex gap-2">
+            <span class="badge badge-explore">Worth exploring</span>
+            <span class="tag">in-process</span>
+          </div>
+          <p class="font-mono text-sm text-slate-600">core/workflow/service/WorkflowTemplateLifecycleService.java (490 lines, 12 public methods)</p>
+          <div class="grid grid-cols-2 gap-4 items-end">
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">Before — one wide interface</p>
+              <div class="space-y-1">
+                <div class="iface-bar h-6 bg-indigo-200 flex items-center px-2 text-xs">createTemplate / createDraftVersion</div>
+                <div class="iface-bar h-6 bg-indigo-200 flex items-center px-2 text-xs">addStage / addStageWithParticipants / updateStage / removeStage</div>
+                <div class="iface-bar h-6 bg-indigo-200 flex items-center px-2 text-xs">addParticipant / addParticipants / setParticipantPermissions</div>
+                <div class="iface-bar h-6 bg-indigo-200 flex items-center px-2 text-xs">publishVersion / deprecateVersion / setDefaultTemplateForWorkType</div>
+                <div class="iface-bar h-24 deep flex items-center justify-center text-xs text-white">one implementation, 490 lines</div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-400 mb-2">After — two cohesive modules</p>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="space-y-1">
+                  <div class="iface-bar h-6 bg-indigo-200 flex items-center px-2 text-xs">createTemplate / publish / deprecate</div>
+                  <div class="iface-bar h-16 deep flex items-center justify-center text-xs text-white">Template/Version lifecycle</div>
+                </div>
+                <div class="space-y-1">
+                  <div class="iface-bar h-6 bg-indigo-200 flex items-center px-2 text-xs">addStage / addParticipant / setPermissions</div>
+                  <div class="iface-bar h-16 deep flex items-center justify-center text-xs text-white">Stage/Participant editing</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p><strong>Problem:</strong> the module isn't shallow (each method carries real logic — linked-list splice/detach, DRAFT guards, participant validation) but its interface is wide: 12 public methods spanning two distinct concerns.</p>
+          <p><strong>Solution:</strong> split by concern — template/version authoring vs. stage/participant editing — into two deep modules instead of one wide one.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Leverage: each interface maps to one concern, easier to learn</li>
+            <li>Locality: a stage-editing bug no longer risks touching template-version code</li>
+          </ul>
+        </article>
+
+        <!-- Candidate 6 -->
+        <article id="candidate-6" class="space-y-4">
+          <h2 class="font-serif text-xl">6. Fold the repeated admin gate into one helper</h2>
+          <div class="flex gap-2">
+            <span class="badge badge-speculative">Speculative</span>
+            <span class="tag">in-process</span>
+          </div>
+          <p class="font-mono text-sm text-slate-600">core/orchestrator/ClientRoleCatalogueOrchestrationService.java · RankCatalogueOrchestrationService.java · CompanyRoleAccessChangeOrchestrationService.java:82-102</p>
+          <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <pre class="mermaid">
+flowchart LR
+  M1["listRoles"] -.->|same 2 lines| G["resolve + requirePlatformAdmin"]
+  M2["listPermissions"] -.->|same 2 lines| G
+  M3["updateRoleDefaultPermissions"] -.->|same 2 lines| G
+  M4["toggleRole"] -.->|same 2 lines| G
+            </pre>
+          </div>
+          <p><strong>Problem:</strong> <code>ClientRoleCatalogueOrchestrationService</code> and <code>RankCatalogueOrchestrationService</code> each repeat an identical <code>resolve</code> + <code>requirePlatformAdmin</code> pair across 3–4 methods — coincidental duplication of a small idiom, not shared business complexity.</p>
+          <p><strong>Solution:</strong> a private <code>requirePlatformAdmin(Long actingIdentityAccountId)</code> helper, same pattern several other orchestrators already use for their own gates.</p>
+          <p class="text-sm text-slate-600"><strong>Separately noted:</strong> <code>CompanyRoleAccessChangeOrchestrationService.getGrants</code> holds the densest inline branching of any orchestrator method reviewed (BPL-staff check → own-profile lookup → <code>companyAdmin</code> flag → uuid equality). CLAUDE.md tolerates authorization logic in orchestrators, so this is a softer smell than the other candidates — worth a look, not a rewrite.</p>
+          <div class="rounded-md border border-amber-300 bg-amber-50 text-amber-800 text-sm p-3">
+            Naming note: this method still reads <code>ownProfile.get().companyAdmin()</code>, a boolean-flag field name from before the Client Role Model Redesign, which now represents Client Admin as a real <code>UserRoleAssignment</code> against the <code>CLIENT_ADMIN</code> Client Role (see CONTEXT.md). Not a depth problem — a naming-migration residue worth tracking alongside the rest of the Company→Client rename (`orderEngine-wls`).
+          </div>
+        </article>
+
+      </section>
+
+      <section id="top-recommendation">
+        <div class="rounded-lg border-2 border-emerald-600 bg-emerald-50 p-6 space-y-2">
+          <p class="text-xs uppercase tracking-wider text-emerald-700">Top recommendation</p>
+          <h2 class="font-serif text-xl"><a href="#candidate-1" class="underline">Candidate 1 — collapse the registration-triage gate into AccessGuard</a></h2>
+          <p class="text-sm">Sits directly in the reviewed hot spot, the highest leverage-per-effort fix here — one existing interface, one line changed — and closes a real security-drift risk: an authorization rule duplicated outside the mechanism that governs it.</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

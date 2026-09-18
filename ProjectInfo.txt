@@ -1,0 +1,46 @@
+This will be used as
+- Taking a session on AI coding. It will replace traditional presentation.
+- The build process itself will be documented as example of how to do agentic frontend development.
+
+Structure:
+* ##Intro into AI
+- How traditional software is build between:
+	- Planning
+	- Work divide
+	- Implement
+
+- AI basic 
+	- This is just token generation
+	- Stateless one session can not recall another session
+- AI concepts
+	- Prompt
+	- Context window - Having 1m context window doesn't mean it is fully usable. only around 120k give usable output. other than that hallucination, performance drop.
+	- Agents 
+	- Sub agents
+	- Skills - example in skill folder. Before starting any feature I used skill grill-me-with-doc which calls grilling and domain-modeling skills.
+	- Hooks
+	- Loop
+	- Graph
+	- Memory - Default md file. But really not versitile. We can use any taks manager like jira, github issue tracker. For local I used beads:light weight, stay with source and can be pushed into git.
+	- Plugings
+	- MCP - Example in front end development section.
+	
+- Software engineering concepts
+	- Spec- Used spec-kit to generate spec
+	- ADR - used grill-me-with domain to record all architectural decision.
+	- TDD - test driven development. Use different agents to write tests and implement
+	- Code review - Integral part of agentic development.
+	
+## Backend development Example
+- Project: Spring boot generic file management library
+	- I gave on file project description. file in backendExample/ProjectDescription.txt
+	- Periodic screenshot is take while development. Names have time included.
+	- 'firstComputer' folder holds screenshots from computer where I started the project
+	- 'secondComputer' folders holds screenshots from computer where I finished the project. It is to test how different developer can colaborate.
+
+## Frontend development example
+- Project: This one
+	- Use periodic screenshot of the terminal TUI and automation browser to capture various state.
+	- Specially how lazyweb mcp is used to research design
+	- Playwright mcp use to test application in browser.
+	

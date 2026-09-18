@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p ~/.lazyweb)",
+      "Bash(echo \"6898c569-e0d0-43a4-a9c1-5edffa1b0726\")",
+      "Bash(claude mcp *)"
+    ]
+  }
+}
