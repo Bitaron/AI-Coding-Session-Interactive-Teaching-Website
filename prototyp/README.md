@@ -80,12 +80,50 @@ section is to show *real* agentic-coding practice, warts included:
   paid action nobody requested. This is the same judgment call the site's
   Intro to AI section teaches under MCP/agentic-toolbox concepts.
 
+### Round 2: re-researching after rejection
+
+When the round-1 palette was rejected as generic, the fix wasn't to reuse
+the same evidence set with new colors — it was to go back to lazyweb with
+sharper queries aimed at *structurally* distinctive real sites, not more
+SaaS-onboarding-shaped screens:
+
+4. `"brutalist typography bold asymmetric editorial layout unconventional"`
+5. `"data journalism scrollytelling distinctive art direction magazine feature"`
+
+These surfaced a different tier of reference entirely — independent
+designer portfolios with oversized, overlapping type, and The Economist's
+data-journalism grid — kept as a separate
+[agentic search](https://www.lazyweb.com/agentic-search/cfabca30-7a5b-4f5a-9760-eaba24eee6f2)
+([and one more result](https://www.lazyweb.com/agentic-search/fc4ffcfa-53b0-47a4-af3e-8215fcadbd6c)
+from the second query). The lesson for future rounds: if a design pass gets
+rejected as generic, don't just re-skin — check whether the *search query*
+itself was still fishing in generic waters.
+
 ## What's here
 
-- **`palette.html`** — 5 variants of the same step screen (hierarchical
-  progress indicator, heading, body copy, a code snippet), each a
-  structurally different typography/color/chrome treatment: Light Editorial,
-  Dark Terminal, Blueprint/Technical, Warm Manuscript, High-contrast Mono.
+- **`palette.html`** — round 1 on Q3: 5 variants of the same step screen
+  (hierarchical progress indicator, heading, body copy, a code snippet),
+  each a different typography/color/chrome treatment: Light Editorial, Dark
+  Terminal, Blueprint/Technical, Warm Manuscript, High-contrast Mono.
+  **Rejected outright** — see round 2 below for why and what changed.
+- **`palette-round2.html`** — round 2 on Q3, after round 1 was rejected as
+  generic for three concrete reasons: all 5 variants shared the identical
+  layout and only swapped color/font (a tweak, not a prototype); each look
+  was itself an overused "AI mood board" cliché regardless of layout; and
+  the whole set was too safe to have a point of view. This round fixes the
+  cause, not the symptom — 4 variants with genuinely different compositions
+  (grid structure, type-scale relationships, information hierarchy), each
+  grounded in a real, structurally distinctive reference pulled fresh via
+  lazyweb (a Berlin designer's oversized-type portfolio, an overlapping-
+  letterform hero, The Economist's Graphic Detail asymmetric grid): Oversized
+  Type Collision, Title-Card Overlap, Editorial Grid Split, Flat
+  Color-Blocked Chrome. Building this also caught a real CSS bug worth
+  keeping as a teaching example: `#C { display: grid; ... }` is an ID
+  selector, so it beat `.stage { display: none }` on specificity regardless
+  of whether `.active` was present — the fix was scoping the rule to
+  `#C.active` instead. Caught because a live DOM check (`.classList`,
+  `getComputedStyle`) was cross-checked against what the screenshot showed,
+  not because the screenshot alone looked wrong.
 - **`transitions.html`** — round 1 on Q5: 5 variants of "advancing to the
   next step," played against a real 4-stop sequence (a diagram from
   `ProjectBrief.md`'s stateless-sessions example, then two screenshot-evidence
