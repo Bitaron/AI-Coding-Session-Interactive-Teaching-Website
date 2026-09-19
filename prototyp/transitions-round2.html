@@ -1,0 +1,334 @@
+<!--
+  PROTOTYPE, kept as teaching material — see /prototyp/README.md.
+  Round 2 on grilling Q5 (issue #11). transitions.html's variant E
+  ("shared-frame morph") won on the frame idea but not on how the content
+  itself entered (crossfade, rejected). This narrows to just that:
+  the frame chrome always morphs (border-radius + scale, as in E); 4
+  variants for what the CONTENT does instead of crossfading.
+  Same 4-stop sequence as transitions.html. Not production code.
+-->
+<!-- Written under: /mattpocock-skills:prototype (UI.md, sub-shape B) -->
+<!-- Verdict: unresolved as of writing — see README.md -->
+<!-- Referenced by: https://github.com/Bitaron/AI-Coding-Session-Interactive-Teaching-Website/issues/11 -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Q5 round 2 — shared-frame morph, content entrance</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: #FAF7F2; color: #1A1A18;
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 90px; }
+
+  .frame {
+    width: min(760px, 92vw);
+    height: 420px;
+    position: relative;
+    background: #fff;
+    border: 1px solid #E2DACB;
+    overflow: hidden;
+    transition: border-radius 450ms ease, transform 450ms ease;
+  }
+  .frame.pulsing { border-radius: 22px; transform: scale(0.985); }
+  /* J: frame moves further and content scales by the SAME ratio, same
+     duration/easing as the frame — one synchronized motion, not two
+     independently-timed ones (I's frame-does-the-work + H's content-scale). */
+  .frame.pulsing-strong { border-radius: 26px; transform: scale(0.94); }
+  .panel.scale-together { transition: transform 450ms ease; transform-origin: center; }
+  .panel.scale-together-out { transform: scale(0.94); }
+  .panel.scale-together-in-start { transform: scale(1.06); }
+
+  .panel {
+    position: absolute; inset: 0;
+    display: none;
+    padding: 2.2rem 2.4rem;
+  }
+  .panel.active { display: block; }
+
+  .kicker { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55; margin-bottom: 1.4rem; }
+
+  .diagram-box {
+    position: absolute;
+    width: 150px; height: 64px;
+    border: 1.5px solid #1D3557;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    background: #EDF2F9;
+    transition: left 550ms cubic-bezier(.4,0,.2,1), top 550ms cubic-bezier(.4,0,.2,1),
+                width 550ms cubic-bezier(.4,0,.2,1), background 550ms ease, opacity 400ms ease;
+  }
+  .bridge {
+    position: absolute;
+    height: 3px;
+    background: #1D3557;
+    transition: opacity 400ms ease, left 550ms ease, width 550ms ease;
+    top: 128px;
+  }
+
+  .shot {
+    position: absolute; inset: 2.2rem 2.4rem 2.4rem;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #111;
+    color: #9FE870;
+    font-family: "SF Mono", Menlo, monospace;
+    padding: 1rem 1.2rem;
+    font-size: 0.85rem;
+  }
+
+  .driver {
+    margin-top: 22px;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 0.85rem;
+  }
+  .driver button {
+    padding: 8px 16px; border-radius: 6px; border: 1px solid #ccc;
+    background: #fff; cursor: pointer;
+  }
+  .driver button:hover { background: #f0f0f0; }
+
+  .switcher {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 14px;
+    background: #111; color: #fff; padding: 10px 16px; border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    font-family: -apple-system, sans-serif; font-size: 0.85rem; z-index: 10;
+  }
+  .switcher button {
+    background: rgba(255,255,255,0.12); border: none; color: #fff;
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 1rem;
+  }
+  .switcher button:hover { background: rgba(255,255,255,0.25); }
+  .switcher .label { min-width: 300px; text-align: center; }
+
+  .note {
+    position: fixed; top: 14px; left: 14px; max-width: 46ch;
+    background: #111; color: #cfcfcf; font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.7rem; line-height: 1.45; padding: 8px 10px; border-radius: 4px;
+    opacity: 0.85; z-index: 10;
+  }
+
+  /* ===== content-entrance behaviors (no crossfade in any of these) ===== */
+
+  /* F: slide-with-frame — content travels, never fades */
+  .panel.slide-with-frame-out { transform: translateX(-100%); }
+  .panel.slide-with-frame-in-start { transform: translateX(100%); }
+  .panel.slide-with-frame { transition: transform 450ms cubic-bezier(.4,0,.2,1); }
+
+  /* G: clip-reveal — content wipes in via clip-path, opacity always 1 */
+  .panel.clip-reveal { transition: clip-path 480ms cubic-bezier(.4,0,.2,1); }
+  .panel.clip-reveal-hidden-l { clip-path: inset(0 100% 0 0); }
+  .panel.clip-reveal-hidden-r { clip-path: inset(0 0 0 100%); }
+  .panel.clip-reveal-shown { clip-path: inset(0 0 0 0); }
+
+  /* H: scale-with-frame — content scales from the frame's own transform origin, no opacity change */
+  .panel.scale-with-frame { transition: transform 450ms cubic-bezier(.4,0,.2,1); transform-origin: center; }
+  .panel.scale-with-frame-out { transform: scale(0.4); }
+  .panel.scale-with-frame-in-start { transform: scale(1.8); }
+
+  /* I: hard cut — content swaps instantly, only the frame chrome animates */
+</style>
+</head>
+<body>
+
+  <div class="note">
+    Round 2 on Q5: variant E's frame-morph chrome, kept exactly as before.
+    F–I change what the CONTENT does when it's not a crossfade (slide, clip
+    wipe, scale, hard cut). <strong>J</strong> is the requested merge of I +
+    H: the frame's motion is more pronounced (like I), and the content
+    scales by the exact same ratio and timing as the frame (like H, no
+    fade) — so both read as one physical zoom instead of two separate
+    animations running in parallel.
+  </div>
+
+  <div class="frame" id="frame">
+    <div class="panel active" data-stop="0">
+      <div class="kicker">Concept diagram — before</div>
+      <div class="diagram-box" style="left:40px; top:60px;">Session A</div>
+      <div class="diagram-box" style="left:40px; top:220px;">Session B</div>
+      <div class="diagram-box" style="left:340px; top:60px; opacity:0;">Context</div>
+      <div class="diagram-box" style="left:340px; top:220px; opacity:0;">New context</div>
+      <div class="bridge" style="left:200px; width:0; opacity:0;"></div>
+    </div>
+
+    <div class="panel" data-stop="1">
+      <div class="kicker">Concept diagram — with external memory</div>
+      <div class="diagram-box" style="left:40px; top:60px;">Session A</div>
+      <div class="diagram-box" style="left:40px; top:220px;">Session B</div>
+      <div class="diagram-box" style="left:340px; top:60px; opacity:1; background:#FBEFD9; border-color:#B5501C;">Context</div>
+      <div class="diagram-box" style="left:340px; top:220px; opacity:1; background:#FBEFD9; border-color:#B5501C;">New context</div>
+      <div class="bridge" style="left:190px; width:150px; opacity:1;"></div>
+    </div>
+
+    <div class="panel" data-stop="2">
+      <div class="kicker">Screenshot evidence — before</div>
+      <div class="shot">$ npm test<br>✗ 3 failing, 1 passing<br>&nbsp;&nbsp;FileController.spec.ts</div>
+    </div>
+
+    <div class="panel" data-stop="3">
+      <div class="kicker">Screenshot evidence — after</div>
+      <div class="shot">$ npm test<br>✓ 4 passing<br>&nbsp;&nbsp;FileController.spec.ts</div>
+    </div>
+  </div>
+
+  <div class="driver">
+    <button id="prevStop">← Prev step</button>
+    <span id="stopLabel"></span>
+    <button id="nextStop">Next step →</button>
+  </div>
+
+  <div class="switcher">
+    <button id="prevVariant" aria-label="Previous variant">←</button>
+    <span class="label" id="variantLabel"></span>
+    <button id="nextVariant" aria-label="Next variant">→</button>
+  </div>
+
+<script>
+  const variants = [
+    { key: "F", name: "Slide with frame (no fade)" },
+    { key: "G", name: "Clip-path wipe (no fade)" },
+    { key: "H", name: "Scale with frame (no fade)" },
+    { key: "I", name: "Hard cut (frame animates, content just swaps)" },
+    { key: "J", name: "Combined: frame + content scale together (no fade)" },
+  ];
+  const stopNames = ["Diagram: before", "Diagram: with memory", "Screenshot: before", "Screenshot: after"];
+
+  const frame = document.getElementById("frame");
+  const panels = [...document.querySelectorAll(".panel")];
+  let stop = 0;
+
+  function variantIndex() {
+    const v = new URLSearchParams(location.search).get("variant") || "F";
+    const i = variants.findIndex(x => x.key === v);
+    return i === -1 ? 0 : i;
+  }
+  function setVariant(delta) {
+    const i = (variantIndex() + delta + variants.length) % variants.length;
+    const params = new URLSearchParams(location.search);
+    params.set("variant", variants[i].key);
+    history.replaceState(null, "", "?" + params.toString());
+    renderVariantLabel();
+  }
+  function renderVariantLabel() {
+    const v = variants[variantIndex()];
+    document.getElementById("variantLabel").textContent = `${v.key} (${v.name})`;
+  }
+  function renderStopLabel() {
+    document.getElementById("stopLabel").textContent = `Step ${stop + 1} of 4 — ${stopNames[stop]}`;
+  }
+
+  const ALL_TRANSITION_CLASSES = [
+    "slide-with-frame", "slide-with-frame-out", "slide-with-frame-in-start",
+    "clip-reveal", "clip-reveal-hidden-l", "clip-reveal-hidden-r", "clip-reveal-shown",
+    "scale-with-frame", "scale-with-frame-out", "scale-with-frame-in-start",
+    "scale-together", "scale-together-out", "scale-together-in-start",
+  ];
+
+  function goToStop(next) {
+    const from = stop;
+    const to = (next + panels.length) % panels.length;
+    if (from === to) return;
+    const dir = to > from || (from === panels.length - 1 && to === 0) ? 1 : -1;
+    const v = variants[variantIndex()].key;
+
+    const fromPanel = panels[from];
+    const toPanel = panels[to];
+
+    // Frame chrome always morphs, regardless of variant (this is the settled part).
+    // J moves the frame further so it reads as one motion with the content's scale.
+    const frameClass = v === "J" ? "pulsing-strong" : "pulsing";
+    frame.classList.add(frameClass);
+
+    const cleanup = () => {
+      fromPanel.classList.remove("active", ...ALL_TRANSITION_CLASSES);
+      toPanel.classList.remove(...ALL_TRANSITION_CLASSES);
+      toPanel.classList.add("active");
+      stop = to;
+      renderStopLabel();
+      frame.classList.remove("pulsing", "pulsing-strong");
+    };
+
+    if (v === "I") {
+      // Hard cut: no content transition classes at all, just swap after the frame settles.
+      setTimeout(() => {
+        fromPanel.classList.remove("active");
+        toPanel.classList.add("active");
+        stop = to;
+        renderStopLabel();
+        frame.classList.remove("pulsing", "pulsing-strong");
+      }, 220);
+      return;
+    }
+
+    if (v === "F") {
+      fromPanel.classList.add("slide-with-frame");
+      toPanel.classList.add("slide-with-frame", dir === 1 ? "slide-with-frame-in-start" : "slide-with-frame-out");
+      // set the exit direction opposite the entry direction
+      requestAnimationFrame(() => {
+        fromPanel.classList.add(dir === 1 ? "slide-with-frame-out" : "slide-with-frame-in-start");
+        toPanel.classList.add("active");
+        requestAnimationFrame(() => {
+          toPanel.classList.remove("slide-with-frame-in-start", "slide-with-frame-out");
+        });
+      });
+    } else if (v === "G") {
+      fromPanel.classList.add("clip-reveal");
+      toPanel.classList.add("clip-reveal", dir === 1 ? "clip-reveal-hidden-r" : "clip-reveal-hidden-l");
+      requestAnimationFrame(() => {
+        fromPanel.classList.add(dir === 1 ? "clip-reveal-hidden-l" : "clip-reveal-hidden-r");
+        toPanel.classList.add("active");
+        requestAnimationFrame(() => {
+          toPanel.classList.remove("clip-reveal-hidden-r", "clip-reveal-hidden-l");
+          toPanel.classList.add("clip-reveal-shown");
+        });
+      });
+    } else if (v === "H") {
+      fromPanel.classList.add("scale-with-frame");
+      toPanel.classList.add("scale-with-frame", "scale-with-frame-in-start");
+      requestAnimationFrame(() => {
+        fromPanel.classList.add("scale-with-frame-out");
+        toPanel.classList.add("active");
+        requestAnimationFrame(() => {
+          toPanel.classList.remove("scale-with-frame-in-start");
+        });
+      });
+    } else if (v === "J") {
+      // Same ratio, same duration/easing as the frame's own "pulsing-strong" —
+      // frame and content read as one physical zoom, not two separate motions.
+      fromPanel.classList.add("scale-together");
+      toPanel.classList.add("scale-together", "scale-together-in-start");
+      requestAnimationFrame(() => {
+        fromPanel.classList.add("scale-together-out");
+        toPanel.classList.add("active");
+        requestAnimationFrame(() => {
+          toPanel.classList.remove("scale-together-in-start");
+        });
+      });
+    }
+
+    setTimeout(cleanup, 480);
+  }
+
+  document.getElementById("nextStop").addEventListener("click", () => goToStop(stop + 1));
+  document.getElementById("prevStop").addEventListener("click", () => goToStop(stop - 1));
+  document.getElementById("prevVariant").addEventListener("click", () => setVariant(-1));
+  document.getElementById("nextVariant").addEventListener("click", () => setVariant(1));
+
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target && e.target.tagName) || "";
+    if (["INPUT", "TEXTAREA"].includes(tag) || e.target.isContentEditable) return;
+    if (e.key === "ArrowRight") goToStop(stop + 1);
+    if (e.key === "ArrowLeft") goToStop(stop - 1);
+  });
+
+  renderVariantLabel();
+  renderStopLabel();
+</script>
+</body>
+</html>

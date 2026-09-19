@@ -86,13 +86,21 @@ section is to show *real* agentic-coding practice, warts included:
   progress indicator, heading, body copy, a code snippet), each a
   structurally different typography/color/chrome treatment: Light Editorial,
   Dark Terminal, Blueprint/Technical, Warm Manuscript, High-contrast Mono.
-- **`transitions.html`** — 5 variants of "advancing to the next step,"
-  played against a real 4-stop sequence (a diagram from `ProjectBrief.md`'s
-  stateless-sessions example, then two screenshot-evidence stops): Universal
-  slide, Universal crossfade, Coupled diagram-morph + screenshot-crossfade,
-  Universal zoom-through, Shared-frame morph.
+- **`transitions.html`** — round 1 on Q5: 5 variants of "advancing to the
+  next step," played against a real 4-stop sequence (a diagram from
+  `ProjectBrief.md`'s stateless-sessions example, then two screenshot-evidence
+  stops): Universal slide, Universal crossfade, Coupled diagram-morph +
+  screenshot-crossfade, Universal zoom-through, Shared-frame morph.
+- **`transitions-round2.html`** — round 2 on Q5: "Shared-frame morph" won on
+  the frame idea but not on its crossfaded content, so this narrows to just
+  that — the frame always morphs; 4 variants for what the content does
+  instead (slide-with-frame, clip-path wipe, scale-with-frame, hard cut),
+  plus **J**, an explicit merge of the hard-cut and scale-with-frame ideas
+  requested directly: the frame's motion is more pronounced and the content
+  scales by the exact same ratio/timing as the frame, so both read as one
+  physical zoom rather than two independently-timed animations.
 
-Both were built as plain, dependency-free HTML/CSS/JS — consistent with the
+All three were built as plain, dependency-free HTML/CSS/JS — consistent with the
 repo's no-framework, no-animation-library constraints (root `CLAUDE.md`) —
 and verified rendering correctly in a real browser (Playwright) before being
 handed back for a decision, including one real bug caught and fixed in that
