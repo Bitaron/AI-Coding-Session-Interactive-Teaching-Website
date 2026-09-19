@@ -1,6 +1,22 @@
 # Prototype (draft): Backend dev example screenshot curation
 
-Rough draft for [Curate Backend dev example screenshot narrative](../issues/01-backend-screenshot-curation.md). This is a sample-based pass (24 of ~107 screenshots opened), not an exhaustive review — built to react to, not a final answer.
+Rough draft for [Curate Backend dev example screenshot narrative](../issues/01-backend-screenshot-curation.md). This is a sample-based pass, not an exhaustive review — built to react to, not a final answer.
+
+## Update (after user's manual cleanup pass)
+
+The user deleted ~49 of the original 75 `secondComputer/` files, narrowing the range from 2026-07-21→09-15 down to 2026-09-10→09-15. Re-sampling 15 of the remaining 26 turned up something important, and two lingering contamination spots.
+
+**Major discovery: the backend project's real spec lives on GitHub, and it was built with wayfinder too.** A 2026-09-11 02:20 AM screenshot (`wayfinder skill setup — claude`) shows the file-manager project has its own active wayfinder map — **"File Manager Spec"**, issue #1 on `Bitaron/spring-boot-file-manager` — with 9 decisions already recorded and 9 frontier tickets (#11–#19) at that point. The Sep 10–11 block of screenshots is that map being worked ticket-by-ticket: baseline versions (#11), a v1 scope lock (folders + metadata + trash, quotas deferred), a public/private file access model (opaque `ShareToken`, not the raw file id), a "library mode" shape decision (thin HTTP client, matching the sibling project's `audit-log-java-client` pattern, full embedding deferred to v2), and a "does state survive a machine switch" question that ends with a `docs/agents/issue-tracker.md` handoff pointer being written and committed.
+
+That last point makes the cross-machine handoff **literal and citable**, not just inferred from timestamps: the ticket asks "if I open this project in different pc with different claude will it start from here? if not create handoff document," and the answer is the `docs/agents/issue-tracker.md` file, committed and pushed, specifically so a session on another machine can pick the map back up. **This is the real "handoff" artifact** — better evidence than juxtaposing a Sep-11 and a Sep-15 screenshot and calling it a handoff.
+
+Since the real decisions are recorded as closed GitHub issues on `Bitaron/spring-boot-file-manager`, it may be worth **fetching that map and its resolved tickets directly** (rather than reading captions off screenshots) to caption this beat accurately — flagged as an open question below rather than done here, since it means reading from a different repo.
+
+**Remaining contamination (not caught by the user's pass):**
+- `2026-09-14 22-06-39` — a BPL Order Engine ticket tree ("notification module integration"), same unrelated client project as before. Still off-topic.
+- `2026-09-15 10-21-02` and `2026-09-15 10-33-10` — both show the `audify`/`audit-log-*` module tree. This is *not* file-manager's own code, but it's not random noise either: it's `spring-boot-activity-log`, the sibling project explicitly named in the Sep-11 baseline and "library mode" tickets as the precedent file-manager's module shape was measured against. Worth keeping only if captioned as "the sibling project referenced in the ticket," otherwise it reads as another stray capture.
+
+**Correction to the original draft:** the two July screenshots I'd flagged (an `AI_Hardware_Procurement_Proposal_Rev2.docx` and a "LLMs & Agentic Coding" title-slide) were mixed up in my notes — one was `2026-07-22`, the other `2026-07-28`. Moot now: the user's cleanup already removed both.
 
 ## Headline finding: `secondComputer/` is contaminated with unrelated work
 
@@ -35,6 +51,7 @@ That's a thin Beat 3 — one screenshot carrying the entire "second developer" s
 
 ## Open questions for the user
 
-1. Should the ~5 confirmed off-topic `secondComputer` shots (and any others like them found on a full pass) just be **left in the folder and ignored** by the curation, or **removed from the repo** entirely as stray captures?
-2. Is a single-screenshot "second developer" beat acceptable, or does someone need to do a **full manual pass** over the remaining ~63 unreviewed `secondComputer` shots to find more genuine handoff material before the narrative is finalized?
-3. Does the "LLMs & Agentic Coding" title-slide screenshot belong here at all, or should it move to the Intro to AI section as a self-referential artifact?
+1. Can I delete `2026-09-14 22-06-39.png` (BPL Order Engine) from `secondComputer/` — same category you already cleaned out?
+2. Keep or drop the two `audify`/`audit-log` shots (`2026-09-15 10-21-02`, `2026-09-15 10-33-10`)? They're the sibling project referenced in the baseline ticket, not file-manager itself — usable only with a caption explaining that, otherwise best cut.
+3. Want me to fetch the actual resolved tickets from the "File Manager Spec" map (issue #1) on `Bitaron/spring-boot-file-manager` on GitHub, so captions quote the real recorded decisions instead of what's visible in a terminal screenshot? That repo is outside this one, so I'd need to confirm you want me reading from it.
+4. Beat 3 (the handoff) can now cite the actual `docs/agents/issue-tracker.md` handoff-document commit instead of just a module-tree screenshot — good enough as the anchor for that beat, or still want a fuller pass over the ~9 unreviewed Sep 10–11 shots and the ~6 unreviewed `firstComputer` shots first?
