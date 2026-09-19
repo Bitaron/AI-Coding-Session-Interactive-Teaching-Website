@@ -1,0 +1,165 @@
+<!--
+  PROTOTYPE, kept as teaching material — see /prototyp/README.md.
+  Q3 synthesis (issue #11): B's title-card content treatment (ghost numeral
+  overlapping the heading, from palette-round2.html) combined with D's
+  sidebar-as-chrome idea (from palette-round2.html) — but upgraded per
+  explicit request: the sidebar expands/collapses, and expanded state shows
+  real site navigation (the 4 named sections + current section's steps),
+  not just progress dots. Section/step names are the site's real, already-
+  decided IA (CONTEXT.md / issue #2), not invented placeholders.
+-->
+<!-- Written under: /mattpocock-skills:prototype (UI.md, sub-shape B) -->
+<!-- Verdict: unresolved as of writing — see README.md -->
+<!-- Referenced by: https://github.com/Bitaron/AI-Coding-Session-Interactive-Teaching-Website/issues/11 -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Q3 final — title-card content + expandable nav sidebar</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #F7F5F0; color: #171614; font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  code.inline { font-family: "SF Mono", Menlo, monospace; background: #ECE6D9; padding: 0.1em 0.35em; }
+
+  .shell { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; transition: grid-template-columns 260ms cubic-bezier(.4,0,.2,1); }
+  .shell.expanded { grid-template-columns: 300px 1fr; }
+
+  /* ---------- Sidebar: matches body's color + font (was a dark rail
+     mismatched against the light body — fixed per direct request) ---------- */
+  .sidebar {
+    background: #F7F5F0; color: #171614; font-family: inherit;
+    overflow: hidden; position: relative; border-right: 1px solid #E2DACB;
+  }
+  .toggle {
+    position: absolute; top: 18px; right: 18px;
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid #cabf9f;
+    background: transparent; color: #171614; cursor: pointer; font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .shell.expanded .toggle { right: auto; left: 18px; }
+  .toggle:hover { background: #ECE6D9; }
+
+  /* collapsed: dot rail (unchanged idea from D, recolored for light chrome) */
+  .dot-rail { padding: 70px 0 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .shell.expanded .dot-rail { display: none; }
+  .dot-rail .dot { width: 10px; height: 10px; border-radius: 50%; background: #DCD5C4; }
+  .dot-rail .dot.done { background: #E8611E; }
+  .dot-rail .dot.current { background: #2FB673; width: 14px; height: 14px; }
+
+  /* expanded: real site nav */
+  .nav { display: none; padding: 64px 20px 24px; white-space: nowrap; font-family: inherit; }
+  .shell.expanded .nav { display: block; }
+  .nav .site-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 1.6rem; }
+  .nav .section { margin-bottom: 0.4rem; }
+  .nav .section-heading {
+    font-size: 0.95rem; font-weight: 700; padding: 8px 0; color: #171614; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav .section-heading .n { color: #8a8272; font-weight: 400; font-size: 0.78rem; }
+  .nav .section.current .section-heading { color: #1f8a56; }
+  .nav .steps { margin: 4px 0 12px; padding-left: 2px; border-left: 2px solid #E2DACB; }
+  .nav .step {
+    display: block; padding: 5px 0 5px 14px; font-size: 0.82rem; color: #857f72;
+    text-decoration: none; border-left: 2px solid transparent; margin-left: -2px; font-family: inherit;
+  }
+  .nav .step.current { color: #171614; border-left-color: #1f8a56; font-weight: 600; }
+  .nav .step:hover { color: #171614; }
+
+  /* ---------- Main content (from B, title-card) ---------- */
+  .main { padding: 10vh 6vw; max-width: 900px; }
+  .title-card { position: relative; height: 220px; margin-bottom: 2rem; }
+  .ghost-num { position: absolute; top: -3rem; left: -1rem; font-size: 11rem; font-weight: 800; color: #EDE7D8; z-index: 1; line-height: 1; user-select: none; }
+  .title-card h1 { position: relative; z-index: 2; font-size: clamp(2.2rem, 4.6vw, 3.4rem); letter-spacing: -0.03em; margin: 4.6rem 0 0 1rem; font-weight: 800; }
+  .title-card .meta { position: relative; z-index: 2; margin-left: 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.6; }
+  .content { max-width: 62ch; margin-left: 1rem; }
+  .content p { font-size: 1.05rem; line-height: 1.65; }
+  .content pre { background: #EDE7D8; color: #171614; font-size: 0.85rem; line-height: 1.55; padding: 1rem 1.2rem; }
+
+  .lazyweb-ref {
+    position: fixed; top: 14px; right: 14px; max-width: 44ch;
+    background: #111; color: #cfcfcf; font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.7rem; line-height: 1.4; padding: 6px 10px; border-radius: 4px;
+    opacity: 0.9; z-index: 20;
+  }
+  .lazyweb-ref a { color: #9FE870; }
+</style>
+</head>
+<body>
+
+  <div class="lazyweb-ref">
+    Content treatment (ghost numeral + bold heading) via lazyweb:
+    <a href="https://olivierguillard.dev/" target="_blank" rel="noopener">olivier-guillard</a>.
+    Sidebar-as-chrome idea via lazyweb:
+    <a href="https://wandelmaier.com/" target="_blank" rel="noopener">wandelmaier</a>.
+    The expand/collapse mechanic and site-wide heading nav are an original
+    extension of that idea, not lazyweb-sourced (requested directly) — section
+    and step names shown are this site's real, already-decided IA
+    (<code>CONTEXT.md</code>), not placeholders.
+  </div>
+
+  <div class="shell" id="shell">
+    <div class="sidebar">
+      <button class="toggle" id="toggle" aria-label="Expand navigation">☰</button>
+
+      <div class="dot-rail">
+        <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div>
+        <div class="dot done"></div><div class="dot done"></div><div class="dot current"></div>
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+
+      <nav class="nav">
+        <div class="site-label">AI Coding Session</div>
+
+        <div class="section current">
+          <div class="section-heading">Intro to AI <span class="n">6/22</span></div>
+          <div class="steps">
+            <a class="step" href="#">Planning &amp; work division</a>
+            <a class="step" href="#">Token generation</a>
+            <a class="step current" href="#">Stateless sessions</a>
+            <a class="step" href="#">Model categories &amp; reasoning effort</a>
+            <a class="step" href="#">Reasoning &amp; token economics</a>
+            <a class="step" href="#">Agentic toolbox: core concepts</a>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-heading">Backend dev example <span class="n">→</span></div>
+        </div>
+
+        <div class="section">
+          <div class="section-heading">Frontend dev example <span class="n">→</span></div>
+        </div>
+
+        <div class="section">
+          <div class="section-heading">Working in an existing project <span class="n">→</span></div>
+        </div>
+      </nav>
+    </div>
+
+    <main class="main">
+      <div class="title-card">
+        <div class="ghost-num">06</div>
+        <div class="meta">Intro to AI · Part 1 · Step 6 of 22</div>
+        <h1>Stateless sessions</h1>
+      </div>
+      <div class="content">
+        <p>A normal model interaction does not, on its own, mean the model remembers another independent session. Each call starts from <code class="inline">context</code> and produces a response — nothing more persists unless an application adds it.</p>
+        <pre>Session A → Context → Response
+Session B → New context (no memory of A) → Response</pre>
+      </div>
+    </main>
+  </div>
+
+<script>
+  const shell = document.getElementById("shell");
+  const toggle = document.getElementById("toggle");
+  toggle.addEventListener("click", () => {
+    const expanding = !shell.classList.contains("expanded");
+    shell.classList.toggle("expanded");
+    toggle.textContent = expanding ? "×" : "☰";
+    toggle.setAttribute("aria-label", expanding ? "Collapse navigation" : "Expand navigation");
+  });
+</script>
+</body>
+</html>

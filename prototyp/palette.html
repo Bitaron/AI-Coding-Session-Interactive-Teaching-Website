@@ -1,0 +1,307 @@
+<!--
+  PROTOTYPE, kept as teaching material — see /prototyp/README.md.
+  Answers grilling Q3 (issue #11): base palette for the teaching site's step
+  screens. 5 variants of the same step content (hierarchical progress
+  indicator, heading, body copy, code snippet), switchable via ?variant=A..E,
+  floating bottom bar + arrow keys. Not production code: no build step, no
+  framework, colors/type hardcoded per variant rather than tokenized.
+-->
+<!-- Written under: /mattpocock-skills:prototype (UI.md, sub-shape B) -->
+<!-- Verdict: unresolved as of writing — see README.md -->
+<!-- Referenced by: https://github.com/Bitaron/AI-Coding-Session-Interactive-Teaching-Website/issues/11 -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Q3 prototype — base palette</title>
+<style>
+  :root {
+    --radius: 0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100vh;
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8vh 6vw;
+  }
+
+  .stage {
+    width: min(720px, 100%);
+    position: relative;
+  }
+
+  .indicator {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6em;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 2.2rem;
+    opacity: 0.75;
+  }
+  .indicator .sep { opacity: 0.5; }
+
+  h1 {
+    font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0 0 1.1rem;
+    font-weight: 700;
+  }
+  p.body-copy {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    margin: 0 0 1.4rem;
+    max-width: 58ch;
+  }
+  code.inline { padding: 0.1em 0.35em; font-size: 0.92em; }
+
+  pre.snippet {
+    margin: 1.4rem 0 0;
+    padding: 1.1rem 1.3rem;
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    overflow-x: auto;
+  }
+
+  .term-bar { display: none; gap: 6px; margin-bottom: 0.8rem; }
+  .term-bar span { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .grid-overlay {
+    display: none;
+    position: absolute;
+    inset: -3rem -4rem;
+    background-image:
+      linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .sheet-label { display: none; font-family: "SF Mono", monospace; font-size: 0.7rem; letter-spacing: 0.08em; margin-top: 2rem; opacity: 0.6; }
+
+  /* ---------- Variant A: Light Editorial ---------- */
+  body[data-variant="A"] {
+    background: #FAF7F2; color: #1A1A18;
+  }
+  body[data-variant="A"] .indicator { color: #6b6a63; }
+  body[data-variant="A"] code.inline { background: #ECE6D9; }
+  body[data-variant="A"] h1 { font-family: Georgia, "Times New Roman", serif; }
+  body[data-variant="A"] pre.snippet { background: #F1ECE1; color: #2c2b26; border: 1px solid #E2DACB; }
+  body[data-variant="A"] .accent { color: #1D3557; }
+
+  /* ---------- Variant B: Dark Terminal ---------- */
+  body[data-variant="B"] {
+    background: #0D0F10; color: #E8E6E1;
+  }
+  body[data-variant="B"] .indicator { color: #8a8f8c; }
+  body[data-variant="B"] h1, body[data-variant="B"] .indicator { font-family: "SF Mono", Menlo, monospace; }
+  body[data-variant="B"] code.inline { background: #1C1F20; color: #9FE870; }
+  body[data-variant="B"] pre.snippet { background: #17191A; color: #9FE870; border: 1px solid #2A2D2E; border-radius: 8px 8px 4px 4px; }
+  body[data-variant="B"] .term-bar { display: flex; }
+  body[data-variant="B"] .term-bar .r { background: #FF5F56; }
+  body[data-variant="B"] .term-bar .y { background: #FFBD2E; }
+  body[data-variant="B"] .term-bar .g { background: #27C93F; }
+  body[data-variant="B"] .accent { color: #6FB8FF; }
+
+  /* ---------- Variant C: Blueprint / Technical ---------- */
+  body[data-variant="C"] {
+    background: #F5F3EE; color: #21241F;
+  }
+  body[data-variant="C"] .indicator { color: #556; font-family: "SF Mono", monospace; }
+  body[data-variant="C"] h1 { font-family: -apple-system, sans-serif; font-weight: 800; }
+  body[data-variant="C"] code.inline { background: #E7E9E2; border: 1px solid #C9CFC0; }
+  body[data-variant="C"] pre.snippet { background: #EDEFE7; color: #232620; border: 1px dashed #9AA491; }
+  body[data-variant="C"] .grid-overlay { display: block; }
+  body[data-variant="C"] .sheet-label { display: block; }
+  body[data-variant="C"] .accent { color: #B5501C; }
+
+  /* ---------- Variant D: Warm Manuscript ---------- */
+  body[data-variant="D"] {
+    background: #F3ECDF; color: #2E2415;
+  }
+  body[data-variant="D"] .indicator { color: #8a7a5c; font-style: italic; }
+  body[data-variant="D"] h1, body[data-variant="D"] p.body-copy { font-family: "Iowan Old Style", Georgia, "Times New Roman", serif; }
+  body[data-variant="D"] code.inline { background: #E7DCC3; }
+  body[data-variant="D"] pre.snippet { background: transparent; border-left: 3px solid #7A5B32; border-radius: 0; padding-left: 1.2rem; }
+  body[data-variant="D"] .accent { color: #7A2E2E; }
+
+  /* ---------- Variant E: High-contrast Mono ---------- */
+  body[data-variant="E"] {
+    background: #FFFFFF; color: #000000;
+  }
+  body[data-variant="E"] .indicator { color: #000; opacity: 1; font-weight: 700; }
+  body[data-variant="E"] h1 { font-weight: 900; letter-spacing: -0.02em; }
+  body[data-variant="E"] code.inline { background: #000; color: #fff; }
+  body[data-variant="E"] pre.snippet { background: #fff; color: #000; border: 2px solid #000; border-radius: 0; }
+  body[data-variant="E"] .accent { color: #D1341A; }
+
+  /* ---------- lazyweb reference caption ---------- */
+  .lazyweb-ref {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    max-width: 46ch;
+    background: #111;
+    color: #cfcfcf;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 6px 10px;
+    border-radius: 4px;
+    opacity: 0.85;
+    z-index: 10;
+  }
+  .lazyweb-ref a { color: #9FE870; }
+
+  /* ---------- Switcher ---------- */
+  .switcher {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #111;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    font-family: -apple-system, sans-serif;
+    font-size: 0.85rem;
+    z-index: 10;
+  }
+  .switcher button {
+    background: rgba(255,255,255,0.12);
+    border: none;
+    color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .switcher button:hover { background: rgba(255,255,255,0.25); }
+  .switcher .label { min-width: 220px; text-align: center; }
+</style>
+</head>
+<body data-variant="A">
+
+  <div class="stage">
+    <div class="grid-overlay"></div>
+    <div class="indicator">
+      <span>Section 1 of 4 — Intro to AI</span>
+      <span class="sep">·</span>
+      <span>Part 1</span>
+      <span class="sep">·</span>
+      <span>Step 6 of 22</span>
+    </div>
+
+    <div class="term-bar"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+
+    <h1>Stateless sessions</h1>
+    <p class="body-copy">
+      A normal model interaction does not, on its own, mean the model remembers
+      another independent session. Each call starts from
+      <code class="inline">context</code> and produces a
+      <span class="accent">response</span> — nothing more persists unless an
+      application adds it.
+    </p>
+
+    <pre class="snippet">Session A
+   ↓
+Context
+   ↓
+Response
+
+Session B
+   ↓
+New context   ← no memory of Session A
+   ↓
+Response</pre>
+
+    <div class="sheet-label">SHEET 06 / 22 — INTRO TO AI</div>
+  </div>
+
+  <div class="lazyweb-ref" id="lazywebRef"></div>
+
+  <div class="switcher">
+    <button id="prev" aria-label="Previous variant">←</button>
+    <span class="label" id="label"></span>
+    <button id="next" aria-label="Next variant">→</button>
+  </div>
+
+<script>
+  // Reference field: the real product screenshot (pulled via the lazyweb MCP,
+  // mcp__lazyweb__lazyweb_search_screens) that this variant's treatment is
+  // grounded in, when there is one. Not every variant has one — see note.
+  const variants = [
+    { key: "A", name: "Light Editorial",
+      ref: { company: "are.na", url: "https://www.are.na/about",
+             note: "long-form doc layout, TOC sidebar, code examples, editorial type" } },
+    { key: "B", name: "Dark Terminal",
+      ref: { company: "Dropbox brand site", url: "https://brand.dropbox.com/typography",
+             note: "dark-background typography / type-scale reference page" } },
+    { key: "C", name: "Blueprint / Technical",
+      ref: { company: "mozi", url: "https://www.mozi.app/hidden/template/style-guide",
+             note: "style-guide page: heading hierarchy + grid/layout examples" } },
+    { key: "D", name: "Warm Manuscript",
+      ref: null },
+    { key: "E", name: "High-contrast Mono",
+      ref: null },
+  ];
+
+  function currentIndex() {
+    const params = new URLSearchParams(location.search);
+    const v = params.get("variant") || "A";
+    const i = variants.findIndex(x => x.key === v);
+    return i === -1 ? 0 : i;
+  }
+
+  function render() {
+    const i = currentIndex();
+    const v = variants[i];
+    document.body.setAttribute("data-variant", v.key);
+    document.getElementById("label").textContent = `${v.key} (${v.name})`;
+
+    const refEl = document.getElementById("lazywebRef");
+    if (v.ref) {
+      refEl.innerHTML = `via lazyweb: <a href="${v.ref.url}" target="_blank" rel="noopener">${v.ref.company}</a> — ${v.ref.note}`;
+    } else {
+      refEl.textContent = "Original exploration — no direct lazyweb reference for this variant.";
+    }
+  }
+
+  function go(delta) {
+    const i = currentIndex();
+    const next = (i + delta + variants.length) % variants.length;
+    const params = new URLSearchParams(location.search);
+    params.set("variant", variants[next].key);
+    history.replaceState(null, "", "?" + params.toString());
+    render();
+  }
+
+  document.getElementById("prev").addEventListener("click", () => go(-1));
+  document.getElementById("next").addEventListener("click", () => go(1));
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target && e.target.tagName) || "";
+    if (["INPUT", "TEXTAREA"].includes(tag) || e.target.isContentEditable) return;
+    if (e.key === "ArrowLeft") go(-1);
+    if (e.key === "ArrowRight") go(1);
+  });
+
+  render();
+</script>
+</body>
+</html>
