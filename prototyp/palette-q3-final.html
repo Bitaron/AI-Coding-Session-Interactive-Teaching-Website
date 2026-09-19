@@ -25,44 +25,46 @@
   .shell { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; transition: grid-template-columns 260ms cubic-bezier(.4,0,.2,1); }
   .shell.expanded { grid-template-columns: 300px 1fr; }
 
-  /* ---------- Sidebar (from D) ---------- */
+  /* ---------- Sidebar: matches body's color + font (was a dark rail
+     mismatched against the light body — fixed per direct request) ---------- */
   .sidebar {
-    background: #171614; color: #cfcbc2; overflow: hidden; position: relative;
+    background: #F7F5F0; color: #171614; font-family: inherit;
+    overflow: hidden; position: relative; border-right: 1px solid #E2DACB;
   }
   .toggle {
     position: absolute; top: 18px; right: 18px;
-    width: 28px; height: 28px; border-radius: 50%; border: 1px solid #45423c;
-    background: transparent; color: #cfcbc2; cursor: pointer; font-size: 0.85rem;
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid #cabf9f;
+    background: transparent; color: #171614; cursor: pointer; font-size: 0.85rem;
     display: flex; align-items: center; justify-content: center;
   }
   .shell.expanded .toggle { right: auto; left: 18px; }
-  .toggle:hover { background: #262420; }
+  .toggle:hover { background: #ECE6D9; }
 
-  /* collapsed: dot rail (unchanged idea from D) */
+  /* collapsed: dot rail (unchanged idea from D, recolored for light chrome) */
   .dot-rail { padding: 70px 0 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
   .shell.expanded .dot-rail { display: none; }
-  .dot-rail .dot { width: 10px; height: 10px; border-radius: 50%; background: #3a3733; }
+  .dot-rail .dot { width: 10px; height: 10px; border-radius: 50%; background: #DCD5C4; }
   .dot-rail .dot.done { background: #E8611E; }
   .dot-rail .dot.current { background: #2FB673; width: 14px; height: 14px; }
 
   /* expanded: real site nav */
-  .nav { display: none; padding: 64px 20px 24px; white-space: nowrap; }
+  .nav { display: none; padding: 64px 20px 24px; white-space: nowrap; font-family: inherit; }
   .shell.expanded .nav { display: block; }
-  .nav .site-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; margin-bottom: 1.6rem; }
+  .nav .site-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 1.6rem; }
   .nav .section { margin-bottom: 0.4rem; }
   .nav .section-heading {
-    font-size: 0.95rem; font-weight: 700; padding: 8px 0; color: #EFEAE0; cursor: pointer;
+    font-size: 0.95rem; font-weight: 700; padding: 8px 0; color: #171614; cursor: pointer;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .nav .section-heading .n { color: #6b6862; font-weight: 400; font-size: 0.78rem; }
-  .nav .section.current .section-heading { color: #2FB673; }
-  .nav .steps { margin: 4px 0 12px; padding-left: 2px; border-left: 2px solid #2a2824; }
+  .nav .section-heading .n { color: #8a8272; font-weight: 400; font-size: 0.78rem; }
+  .nav .section.current .section-heading { color: #1f8a56; }
+  .nav .steps { margin: 4px 0 12px; padding-left: 2px; border-left: 2px solid #E2DACB; }
   .nav .step {
-    display: block; padding: 5px 0 5px 14px; font-size: 0.82rem; color: #a6a29a;
-    text-decoration: none; border-left: 2px solid transparent; margin-left: -2px;
+    display: block; padding: 5px 0 5px 14px; font-size: 0.82rem; color: #857f72;
+    text-decoration: none; border-left: 2px solid transparent; margin-left: -2px; font-family: inherit;
   }
-  .nav .step.current { color: #fff; border-left-color: #2FB673; font-weight: 600; }
-  .nav .step:hover { color: #fff; }
+  .nav .step.current { color: #171614; border-left-color: #1f8a56; font-weight: 600; }
+  .nav .step:hover { color: #171614; }
 
   /* ---------- Main content (from B, title-card) ---------- */
   .main { padding: 10vh 6vw; max-width: 900px; }
