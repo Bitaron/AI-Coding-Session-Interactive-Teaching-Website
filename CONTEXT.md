@@ -12,8 +12,8 @@ The site section presenting a completed Spring Boot file-management-library proj
 _Avoid_: Backend example, Backend section
 
 **Frontend dev example**:
-The site section presenting *this repo's own build* as a worked example, illustrated with periodic terminal/browser screenshots to be captured while the site is developed — a self-referential documentation process, distinct from the Backend dev example because its material doesn't exist yet.
-_Avoid_: Frontend example, Frontend section
+The site section presenting *this repo's own build* as a worked example, illustrated with periodic terminal/browser screenshots captured while the site is developed — a self-referential documentation process, distinct from the Backend dev example because its material doesn't exist yet. Its screenshot capture and narrative freeze at this site's launch: it is a fixed case study of this build, not a continuously-updating one (see ADR-0003). The section opens with an explicit callout naming its self-referential nature to the reader.
+_Avoid_: Frontend example, Frontend section, living section (this section *was* built live, but does not keep updating after launch — "living" describes its production, not its ongoing behavior)
 
 **Working in an existing project**:
 The site section presenting AI-assisted work inside a pre-existing/legacy codebase as a worked example, distinct from Backend dev example and Frontend dev example because those are both built from scratch. Its screenshots are added last, after the other sections' material is in place.
