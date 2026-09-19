@@ -124,6 +124,18 @@ itself was still fishing in generic waters.
   `#C.active` instead. Caught because a live DOM check (`.classList`,
   `getComputedStyle`) was cross-checked against what the screenshot showed,
   not because the screenshot alone looked wrong.
+- **`palette-q3-final.html`** — **Q3 settled here.** Combines round 2's
+  variant B (title-card content: a ghost numeral overlapping the bold
+  heading) with variant D's sidebar-as-chrome idea, per explicit direction —
+  but the sidebar now expands/collapses (a toggle button, animated grid-
+  column width) instead of staying a fixed dot rail, and its expanded state
+  shows real site navigation: the 4 named sections as headings, with the
+  current section's steps nested underneath and the current step
+  highlighted, not just a progress dot per step. Section/step names shown
+  are the site's real, already-decided IA (`CONTEXT.md`), not placeholders.
+  The expand/collapse mechanic and heading-nav content aren't lazyweb-
+  sourced — lazyweb only grounded the two ideas being combined (title-card
+  treatment, sidebar-as-chrome), not this specific synthesis.
 - **`transitions.html`** — round 1 on Q5: 5 variants of "advancing to the
   next step," played against a real 4-stop sequence (a diagram from
   `ProjectBrief.md`'s stateless-sessions example, then two screenshot-evidence
@@ -163,9 +175,15 @@ is selected.
 
 ## Status
 
-As of writing, the palette (Q3) and transition (Q5) decisions on issue #11
-had not yet been locked in — the human was still reviewing these prototypes.
-Once a direction is chosen, the answer belongs in the design brief the issue
-asks for (and, per the repo's ADR convention, likely its own ADR); this
-folder stays as the record of *how* that decision was reached, not as the
-decision itself.
+Both Q3 and Q5 are now settled:
+
+- **Q3**: `palette-q3-final.html` — title-card content (ghost numeral +
+  heading) with an expandable sidebar showing real site navigation.
+- **Q5**: `transitions-round2.html` variant **J** — frame and content scale
+  together on the same ratio/timing, no fade.
+
+The answer still needs to be written up as the actual design brief issue
+#11 asks for (and, per the repo's ADR convention, likely its own ADR) —
+this folder stays as the record of *how* the decisions were reached
+(including the round 1 rejections and why), not as a substitute for that
+brief.
