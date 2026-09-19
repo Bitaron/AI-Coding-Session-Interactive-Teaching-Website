@@ -1,10 +1,15 @@
 <!--
-  PROTOTYPE — throwaway. Answers grilling Q3 (issue #11): base palette for the
-  teaching site's step screens. 5 variants of the same step content
-  (hierarchical progress indicator, heading, body copy, code snippet),
-  switchable via ?variant=A..E, floating bottom bar + arrow keys.
-  Discard after the decision is made; do not fold this file into the build.
+  PROTOTYPE, kept as teaching material — see /prototyp/README.md.
+  Answers grilling Q3 (issue #11): base palette for the teaching site's step
+  screens. 5 variants of the same step content (hierarchical progress
+  indicator, heading, body copy, code snippet), switchable via ?variant=A..E,
+  floating bottom bar + arrow keys. Not production code: no build step, no
+  framework, colors/type hardcoded per variant rather than tokenized.
 -->
+<!-- Written under: /mattpocock-skills:prototype (UI.md, sub-shape B) -->
+<!-- Verdict: unresolved as of writing — see README.md -->
+<!-- Referenced by: https://github.com/Bitaron/AI-Coding-Session-Interactive-Teaching-Website/issues/11 -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -141,6 +146,24 @@
   body[data-variant="E"] pre.snippet { background: #fff; color: #000; border: 2px solid #000; border-radius: 0; }
   body[data-variant="E"] .accent { color: #D1341A; }
 
+  /* ---------- lazyweb reference caption ---------- */
+  .lazyweb-ref {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    max-width: 46ch;
+    background: #111;
+    color: #cfcfcf;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 6px 10px;
+    border-radius: 4px;
+    opacity: 0.85;
+    z-index: 10;
+  }
+  .lazyweb-ref a { color: #9FE870; }
+
   /* ---------- Switcher ---------- */
   .switcher {
     position: fixed;
@@ -211,6 +234,8 @@ Response</pre>
     <div class="sheet-label">SHEET 06 / 22 — INTRO TO AI</div>
   </div>
 
+  <div class="lazyweb-ref" id="lazywebRef"></div>
+
   <div class="switcher">
     <button id="prev" aria-label="Previous variant">←</button>
     <span class="label" id="label"></span>
@@ -218,12 +243,23 @@ Response</pre>
   </div>
 
 <script>
+  // Reference field: the real product screenshot (pulled via the lazyweb MCP,
+  // mcp__lazyweb__lazyweb_search_screens) that this variant's treatment is
+  // grounded in, when there is one. Not every variant has one — see note.
   const variants = [
-    { key: "A", name: "Light Editorial" },
-    { key: "B", name: "Dark Terminal" },
-    { key: "C", name: "Blueprint / Technical" },
-    { key: "D", name: "Warm Manuscript" },
-    { key: "E", name: "High-contrast Mono" },
+    { key: "A", name: "Light Editorial",
+      ref: { company: "are.na", url: "https://www.are.na/about",
+             note: "long-form doc layout, TOC sidebar, code examples, editorial type" } },
+    { key: "B", name: "Dark Terminal",
+      ref: { company: "Dropbox brand site", url: "https://brand.dropbox.com/typography",
+             note: "dark-background typography / type-scale reference page" } },
+    { key: "C", name: "Blueprint / Technical",
+      ref: { company: "mozi", url: "https://www.mozi.app/hidden/template/style-guide",
+             note: "style-guide page: heading hierarchy + grid/layout examples" } },
+    { key: "D", name: "Warm Manuscript",
+      ref: null },
+    { key: "E", name: "High-contrast Mono",
+      ref: null },
   ];
 
   function currentIndex() {
@@ -238,6 +274,13 @@ Response</pre>
     const v = variants[i];
     document.body.setAttribute("data-variant", v.key);
     document.getElementById("label").textContent = `${v.key} (${v.name})`;
+
+    const refEl = document.getElementById("lazywebRef");
+    if (v.ref) {
+      refEl.innerHTML = `via lazyweb: <a href="${v.ref.url}" target="_blank" rel="noopener">${v.ref.company}</a> — ${v.ref.note}`;
+    } else {
+      refEl.textContent = "Original exploration — no direct lazyweb reference for this variant.";
+    }
   }
 
   function go(delta) {

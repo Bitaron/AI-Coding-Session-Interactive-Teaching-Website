@@ -1,11 +1,16 @@
 <!--
-  PROTOTYPE — throwaway. Answers grilling Q5 (issue #11): step-transition
-  primitive(s). 5 variants of "advancing to the next step" applied to a
-  4-stop sequence: 2 diagram stops (a real diagram from ProjectBrief.md's
-  stateless-sessions example) followed by 2 screenshot-evidence stops.
-  Variant switcher = bottom pill (?variant=A..E). Separate "Prev/Next step"
-  control drives the 4-stop sequence itself. Discard after the decision.
+  PROTOTYPE, kept as teaching material — see /prototyp/README.md.
+  Answers grilling Q5 (issue #11): step-transition primitive(s). 5 variants
+  of "advancing to the next step" applied to a 4-stop sequence: 2 diagram
+  stops (a real diagram from ProjectBrief.md's stateless-sessions example)
+  followed by 2 screenshot-evidence stops. Variant switcher = bottom pill
+  (?variant=A..E). Separate "Prev/Next step" control drives the 4-stop
+  sequence itself. Not production code: no build step, no framework.
 -->
+<!-- Written under: /mattpocock-skills:prototype (UI.md, sub-shape B) -->
+<!-- Verdict: unresolved as of writing — see README.md -->
+<!-- Referenced by: https://github.com/Bitaron/AI-Coding-Session-Interactive-Teaching-Website/issues/11 -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -97,6 +102,23 @@
   .switcher button:hover { background: rgba(255,255,255,0.25); }
   .switcher .label { min-width: 260px; text-align: center; }
 
+  .lazyweb-ref {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    max-width: 50ch;
+    background: #111;
+    color: #cfcfcf;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.7rem;
+    line-height: 1.45;
+    padding: 8px 10px;
+    border-radius: 4px;
+    opacity: 0.85;
+    z-index: 10;
+  }
+  .lazyweb-ref a { color: #9FE870; }
+
   /* ===== transition behaviors, applied to #frame per variant+stop-change ===== */
   .slide-out-l { transform: translateX(-40px); opacity: 0; }
   .slide-in-r  { transform: translateX(40px); opacity: 0; }
@@ -111,6 +133,20 @@
 </style>
 </head>
 <body>
+
+  <div class="lazyweb-ref">
+    lazyweb (via <code>lazyweb_search_screens</code>) informed the
+    <em>hierarchical progress indicator</em> decision behind this sequence —
+    Retool's numbered step bar (no public page URL in the lazyweb result),
+    <a href="https://minimalmaxims.com/quotes/absence/" target="_blank" rel="noopener">minimal-maxims</a>'
+    dot pagination, and
+    <a href="https://komi.io/us/en/for-brands" target="_blank" rel="noopener">komi</a>'s
+    flat "N of M" counter (see <code>palette.html</code>). The 5 <strong>motion</strong>
+    variants here are original explorations of root <code>CLAUDE.md</code>'s
+    animation guidance ("architecture transformations", "code → result
+    transitions") — lazyweb's references are static screenshots, so no
+    motion variant is directly sourced from one.
+  </div>
 
   <div class="frame" id="frame">
     <div class="panel active" data-stop="0">
