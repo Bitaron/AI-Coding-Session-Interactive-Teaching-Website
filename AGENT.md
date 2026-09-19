@@ -66,3 +66,9 @@ a clear benefit to the teaching material.
 Never invent details about the real project.
 
 Use placeholders where sensitive information has been removed.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues (`Bitaron/AI-Coding-Session-Interactive-Teaching-Website`), via the `gh` CLI. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) — also the entry point for resuming the active `/wayfinder` map ("AI Coding Session Website — content/IA spec", issue #2).
