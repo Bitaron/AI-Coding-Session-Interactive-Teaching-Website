@@ -1,0 +1,3 @@
+# Per-step routes use the History API with a GitHub Pages 404.html fallback, not hash routing
+
+Each step in the stepped/slide-deck navigation gets its own real URL (e.g. `/intro/3`), deep-linkable and back/forward-safe. GitHub Pages is a static host with no server-side rewrites, so clean paths need the standard workaround: a `404.html` that redirects unknown paths back to `index.html`, which then replays the intended route client-side. We chose this over hash-based routing (`#/intro/3`), which needs no such trick and would have been the simpler default, because the user wants real paths rather than hash fragments. No router library: routing is small enough to hand-write in vanilla TS, consistent with the repo's no-framework stance.
