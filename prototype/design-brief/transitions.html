@@ -1,0 +1,263 @@
+<!--
+  PROTOTYPE — throwaway. Answers grilling Q5 (issue #11): step-transition
+  primitive(s). 5 variants of "advancing to the next step" applied to a
+  4-stop sequence: 2 diagram stops (a real diagram from ProjectBrief.md's
+  stateless-sessions example) followed by 2 screenshot-evidence stops.
+  Variant switcher = bottom pill (?variant=A..E). Separate "Prev/Next step"
+  control drives the 4-stop sequence itself. Discard after the decision.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Q5 prototype — step transitions</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: #FAF7F2; color: #1A1A18;
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 90px; }
+
+  .frame {
+    width: min(760px, 92vw);
+    height: 420px;
+    position: relative;
+    background: #fff;
+    border: 1px solid #E2DACB;
+    overflow: hidden;
+  }
+
+  .panel {
+    position: absolute; inset: 0;
+    display: none;
+    padding: 2.2rem 2.4rem;
+  }
+  .panel.active { display: block; }
+
+  .kicker { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55; margin-bottom: 1.4rem; }
+
+  /* --- diagram panels (stops 0,1) --- */
+  .diagram-box {
+    position: absolute;
+    width: 150px; height: 64px;
+    border: 1.5px solid #1D3557;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    background: #EDF2F9;
+    transition: left 550ms cubic-bezier(.4,0,.2,1), top 550ms cubic-bezier(.4,0,.2,1),
+                width 550ms cubic-bezier(.4,0,.2,1), background 550ms ease, opacity 400ms ease;
+  }
+  .bridge {
+    position: absolute;
+    height: 3px;
+    background: #1D3557;
+    transition: opacity 400ms ease, left 550ms ease, width 550ms ease;
+    top: 128px;
+  }
+
+  /* --- screenshot panels (stops 2,3) --- */
+  .shot {
+    position: absolute; inset: 2.2rem 2.4rem 2.4rem;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #111;
+    color: #9FE870;
+    font-family: "SF Mono", Menlo, monospace;
+    padding: 1rem 1.2rem;
+    font-size: 0.85rem;
+  }
+
+  /* --- driver controls --- */
+  .driver {
+    margin-top: 22px;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 0.85rem;
+  }
+  .driver button {
+    padding: 8px 16px; border-radius: 6px; border: 1px solid #ccc;
+    background: #fff; cursor: pointer;
+  }
+  .driver button:hover { background: #f0f0f0; }
+
+  /* --- variant switcher (bottom pill) --- */
+  .switcher {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 14px;
+    background: #111; color: #fff; padding: 10px 16px; border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    font-family: -apple-system, sans-serif; font-size: 0.85rem; z-index: 10;
+  }
+  .switcher button {
+    background: rgba(255,255,255,0.12); border: none; color: #fff;
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 1rem;
+  }
+  .switcher button:hover { background: rgba(255,255,255,0.25); }
+  .switcher .label { min-width: 260px; text-align: center; }
+
+  /* ===== transition behaviors, applied to #frame per variant+stop-change ===== */
+  .slide-out-l { transform: translateX(-40px); opacity: 0; }
+  .slide-in-r  { transform: translateX(40px); opacity: 0; }
+  .fade { opacity: 0; }
+  .scale-out { transform: scale(0.92); opacity: 0; }
+  .scale-in { transform: scale(1.06); opacity: 0; }
+
+  .panel { transition: transform 420ms ease, opacity 420ms ease; }
+
+  .frame.zoom-chrome { transition: border-radius 450ms ease, transform 450ms ease; }
+  .frame.zoom-chrome.pulsing { border-radius: 22px; transform: scale(0.985); }
+</style>
+</head>
+<body>
+
+  <div class="frame" id="frame">
+    <div class="panel active" data-stop="0">
+      <div class="kicker">Concept diagram — before</div>
+      <div class="diagram-box" style="left:40px; top:60px;">Session A</div>
+      <div class="diagram-box" style="left:40px; top:220px;">Session B</div>
+      <div class="diagram-box" style="left:340px; top:60px; opacity:0;">Context</div>
+      <div class="diagram-box" style="left:340px; top:220px; opacity:0;">New context</div>
+      <div class="bridge" style="left:200px; width:0; opacity:0;"></div>
+    </div>
+
+    <div class="panel" data-stop="1">
+      <div class="kicker">Concept diagram — with external memory</div>
+      <div class="diagram-box" style="left:40px; top:60px;">Session A</div>
+      <div class="diagram-box" style="left:40px; top:220px;">Session B</div>
+      <div class="diagram-box" style="left:340px; top:60px; opacity:1; background:#FBEFD9; border-color:#B5501C;">Context</div>
+      <div class="diagram-box" style="left:340px; top:220px; opacity:1; background:#FBEFD9; border-color:#B5501C;">New context</div>
+      <div class="bridge" style="left:190px; width:150px; opacity:1;"></div>
+    </div>
+
+    <div class="panel" data-stop="2">
+      <div class="kicker">Screenshot evidence — before</div>
+      <div class="shot">$ npm test<br>✗ 3 failing, 1 passing<br>&nbsp;&nbsp;FileController.spec.ts</div>
+    </div>
+
+    <div class="panel" data-stop="3">
+      <div class="kicker">Screenshot evidence — after</div>
+      <div class="shot">$ npm test<br>✓ 4 passing<br>&nbsp;&nbsp;FileController.spec.ts</div>
+    </div>
+  </div>
+
+  <div class="driver">
+    <button id="prevStop">← Prev step</button>
+    <span id="stopLabel"></span>
+    <button id="nextStop">Next step →</button>
+  </div>
+
+  <div class="switcher">
+    <button id="prevVariant" aria-label="Previous variant">←</button>
+    <span class="label" id="variantLabel"></span>
+    <button id="nextVariant" aria-label="Next variant">→</button>
+  </div>
+
+<script>
+  const variants = [
+    { key: "A", name: "Universal slide (same for all content)" },
+    { key: "B", name: "Universal crossfade (same for all content)" },
+    { key: "C", name: "Coupled: diagram morphs, screenshots crossfade" },
+    { key: "D", name: "Universal zoom-through" },
+    { key: "E", name: "Shared-frame morph, content crossfades inside" },
+  ];
+  const stopNames = ["Diagram: before", "Diagram: with memory", "Screenshot: before", "Screenshot: after"];
+
+  const frame = document.getElementById("frame");
+  const panels = [...document.querySelectorAll(".panel")];
+  let stop = 0;
+
+  function variantIndex() {
+    const v = new URLSearchParams(location.search).get("variant") || "A";
+    const i = variants.findIndex(x => x.key === v);
+    return i === -1 ? 0 : i;
+  }
+  function setVariant(delta) {
+    const i = (variantIndex() + delta + variants.length) % variants.length;
+    const params = new URLSearchParams(location.search);
+    params.set("variant", variants[i].key);
+    history.replaceState(null, "", "?" + params.toString());
+    renderVariantLabel();
+  }
+  function renderVariantLabel() {
+    const v = variants[variantIndex()];
+    document.getElementById("variantLabel").textContent = `${v.key} (${v.name})`;
+  }
+  function renderStopLabel() {
+    document.getElementById("stopLabel").textContent = `Step ${stop + 1} of 4 — ${stopNames[stop]}`;
+  }
+
+  function isDiagramStop(s) { return s === 0 || s === 1; }
+
+  function goToStop(next) {
+    const from = stop;
+    const to = (next + panels.length) % panels.length;
+    if (from === to) return;
+    const v = variants[variantIndex()].key;
+
+    const fromPanel = panels[from];
+    const toPanel = panels[to];
+
+    const bothDiagram = isDiagramStop(from) && isDiagramStop(to);
+
+    const finish = () => {
+      fromPanel.classList.remove("active", "slide-out-l", "fade", "scale-out");
+      toPanel.classList.add("active");
+      toPanel.classList.remove("slide-in-r", "fade", "scale-in");
+      stop = to;
+      renderStopLabel();
+      frame.classList.remove("pulsing");
+    };
+
+    if (v === "C" && bothDiagram) {
+      // Coupled variant, diagram-to-diagram: morph boxes in place, no panel swap.
+      fromPanel.classList.remove("active");
+      toPanel.classList.add("active");
+      stop = to;
+      renderStopLabel();
+      return;
+    }
+
+    // Otherwise: swap whole panels using the variant's motion.
+    if (v === "A") {
+      fromPanel.classList.add("slide-out-l");
+      toPanel.classList.add("slide-in-r");
+    } else if (v === "B" || v === "C") {
+      fromPanel.classList.add("fade");
+      toPanel.classList.add("fade");
+    } else if (v === "D") {
+      fromPanel.classList.add("scale-out");
+      toPanel.classList.add("scale-in");
+    } else if (v === "E") {
+      frame.classList.add("zoom-chrome", "pulsing");
+      fromPanel.classList.add("fade");
+      toPanel.classList.add("fade");
+    }
+
+    requestAnimationFrame(() => {
+      toPanel.classList.add("active");
+      requestAnimationFrame(() => {
+        toPanel.classList.remove("slide-in-r", "fade", "scale-in");
+      });
+    });
+    setTimeout(finish, 460);
+  }
+
+  document.getElementById("nextStop").addEventListener("click", () => goToStop(stop + 1));
+  document.getElementById("prevStop").addEventListener("click", () => goToStop(stop - 1));
+  document.getElementById("prevVariant").addEventListener("click", () => setVariant(-1));
+  document.getElementById("nextVariant").addEventListener("click", () => setVariant(1));
+
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target && e.target.tagName) || "";
+    if (["INPUT", "TEXTAREA"].includes(tag) || e.target.isContentEditable) return;
+    if (e.key === "ArrowRight") goToStop(stop + 1);
+    if (e.key === "ArrowLeft") goToStop(stop - 1);
+  });
+
+  renderVariantLabel();
+  renderStopLabel();
+</script>
+</body>
+</html>
