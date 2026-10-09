@@ -12,9 +12,12 @@ export type RigId =
   | "mycelium"
   | "mobile";
 
-/** Which rig a station shows, plus rig-specific knobs. */
+/**
+ * Which rig a station shows, plus rig-specific knobs. v2 stations use a
+ * RigId; v3 swaps every cue for one of its own city rigs (src/v3/content).
+ */
 export interface SceneCue {
-  rig: RigId;
+  rig: string;
   preset?: Record<string, number | string | boolean>;
 }
 

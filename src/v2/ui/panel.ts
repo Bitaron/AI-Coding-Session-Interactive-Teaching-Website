@@ -1,9 +1,11 @@
 import { findSection, globalIndex, sections, totalSteps } from "../content/sections";
 import type { Section, Step } from "../content/types";
+import { edition } from "../core/edition";
 import { events, setParam, store, type Params, type Route } from "../core/state";
 import { openShot } from "./dialogs";
 import { el, escapeHtml, rich } from "./markup";
 import { Replay } from "./replay";
+import { scrollCue, stripCue } from "./scrollcue";
 import { path, step as stepRoute } from "./router";
 
 const EFFORT_NAMES = ["none", "low", "medium", "high", "xhigh", "max"];
@@ -29,6 +31,7 @@ export class Panel {
   constructor() {
     this.root.setAttribute("aria-live", "polite");
     this.root.append(this.body);
+    scrollCue(this.root);
     store.select((s) => s.route, (r) => this.render(r));
     events.on("arrived", (r) => {
       if (r && this.replay && store.get().route === r) this.replay.play();
@@ -59,15 +62,9 @@ export class Panel {
   private renderMap(): void {
     const b = this.body;
     b.append(
-      el("p", "v2-kicker", "A field guide · v2"),
-      el("h1", "v2-title", "Agentic coding,<br/>walked through."),
-      el(
-        "p",
-        "v2-lede",
-        rich(
-          "One continuous map. Each station is one idea, with a living model of it you can poke. Terms like [[context-rot|context rot]] or [[tool-schema|tool schema]] open a deep dive. Two real builds — a Spring Boot library and this guide itself — are replayed from their screenshots."
-        )
-      )
+      el("p", "v2-kicker", escapeHtml(edition.kicker)),
+      el("h1", "v2-title", edition.title),
+      el("p", "v2-lede", rich(edition.lede))
     );
     const list = el("ol", "v2-map-list");
     sections.forEach((s) => {
@@ -135,17 +132,27 @@ export class Panel {
 
     if (s.evidence?.length) {
       const ev = el("section", "v2-evidence");
-      ev.append(el("h2", "v2-evidence-head", `The real screenshots <span>${s.evidence.length}</span>`));
+      const head = el("h2", "v2-evidence-head", `The real screenshots <span>${s.evidence.length}</span>`);
+      const navs = el("span", "v2-strip-navs");
+      head.append(navs);
+      ev.append(head);
       const strip = el("div", "v2-strip");
       s.evidence.forEach((shot, i) => {
         const btn = el("button", "v2-thumb") as HTMLButtonElement;
         btn.type = "button";
         btn.innerHTML = `<img src="${shot.src}" alt="${escapeHtml(shot.alt)}" loading="lazy" decoding="async" /><span>${escapeHtml(shot.label)}</span>`;
         btn.addEventListener("click", () => openShot(s.evidence!, i));
+        // Lets a scene point at the part this screenshot stands for.
+        const point = (index: number) => () => events.emit("evidence", { index });
+        btn.addEventListener("pointerenter", point(i));
+        btn.addEventListener("focus", point(i));
+        btn.addEventListener("pointerleave", point(-1));
+        btn.addEventListener("blur", point(-1));
         strip.append(btn);
       });
       ev.append(strip);
       b.append(ev);
+      stripCue(strip, ev, navs);
     }
 
     const nav = el("nav", "v2-stepnav");

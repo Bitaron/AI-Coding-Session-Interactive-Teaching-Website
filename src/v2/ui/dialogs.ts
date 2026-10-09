@@ -1,6 +1,7 @@
 import { glossary } from "../content/glossary";
 import type { Evidence } from "../content/types";
 import { el, escapeHtml } from "./markup";
+import { scrollCue } from "./scrollcue";
 
 /**
  * Two modal layers built on <dialog>: the deep-dive term card and the
@@ -13,6 +14,7 @@ const shotDialog = el("dialog", "v2-shot");
 
 export function mountDialogs(root: HTMLElement): void {
   root.append(termDialog, shotDialog);
+  scrollCue(termDialog);
   for (const d of [termDialog, shotDialog]) {
     // Click on the backdrop (the dialog box itself, not its content) closes.
     d.addEventListener("click", (e) => {
@@ -31,6 +33,7 @@ export function openTerm(id: string): void {
   if (!entry) return;
   termDialog.innerHTML = `
     <article>
+      <button type="button" class="v2-term-x" data-close aria-label="Close">×</button>
       <header>
         <span class="v2-kicker">Deep dive</span>
         <h2>${escapeHtml(entry.term)}</h2>

@@ -1,4 +1,5 @@
 import { findSection, sections, totalSteps } from "../content/sections";
+import { edition } from "../core/edition";
 import { events, store, type Route } from "../core/state";
 import { el, escapeHtml } from "./markup";
 import { go, path } from "./router";
@@ -39,7 +40,7 @@ export class Dial {
   private raf = 0;
   private hover: { angle: number; near: boolean } | null = null;
   private lastTop = -1;
-  private visited = new Set<number>(JSON.parse(localStorage.getItem("v2.visited") ?? "[]"));
+  private visited = new Set<number>(JSON.parse(localStorage.getItem(`${edition.slug}.visited`) ?? "[]"));
   private readonly R = 100;
   /** Where "current" sits: twelve o'clock on desktop, nine o'clock as an edge wheel on phones. */
   private orient = 0;
@@ -154,7 +155,7 @@ export class Dial {
     const t = this.tickFor(route);
     if (t) {
       this.visited.add(t.global);
-      localStorage.setItem("v2.visited", JSON.stringify([...this.visited]));
+      localStorage.setItem(`${edition.slug}.visited`, JSON.stringify([...this.visited]));
       // Turn the short way round to bring this tick to twelve o'clock.
       this.target = this.angle + wrap(-t.angle - this.angle);
       if (immediate) this.angle = this.target;

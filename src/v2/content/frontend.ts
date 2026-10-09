@@ -211,7 +211,7 @@ export const frontend: Section = {
       points: [
         "B gave the title card with a ghost numeral; D gave the sidebar as chrome; expand/collapse was asked for directly.",
         "Queued next: “side bar color doesn't match with body.”",
-        "v1 of this guide shipped that direction. You're on v2 — the same content, rebuilt as a place.",
+        "v1 of this guide shipped that direction. This edition is the same content, rebuilt as a place.",
       ],
       scene: {
         rig: "strata",

@@ -10,7 +10,7 @@ import type { RigFactory } from "./rig";
 import { strata } from "./strata";
 import { tumbler } from "./tumbler";
 
-export const rigFactories: Record<RigId, RigFactory> = {
+const rigFactories: Record<RigId, RigFactory> = {
   colony,
   loom,
   pool,
@@ -21,3 +21,9 @@ export const rigFactories: Record<RigId, RigFactory> = {
   mycelium,
   mobile,
 };
+
+export function rigFactory(id: string): RigFactory {
+  const factory = (rigFactories as Record<string, RigFactory | undefined>)[id];
+  if (!factory) throw new Error(`Unknown rig: ${id}`);
+  return factory;
+}

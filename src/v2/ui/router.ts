@@ -1,12 +1,15 @@
 import { findSection, sections } from "../content/sections";
+import { edition } from "../core/edition";
 import { store, type Route } from "../core/state";
 
 // /agentic-coding-guide/v2/                      → the map
 // /agentic-coding-guide/v2/<section>/<step-slug> → a station
 // Step numbers (/v2/intro/3) are accepted too and rewritten to the slug.
-const BASE = `${import.meta.env.BASE_URL}v2/`;
+// v3 uses the same scheme under /v3/.
+const base = () => `${import.meta.env.BASE_URL}${edition.slug}/`;
 
 export function parse(pathname: string): Route | null {
+  const BASE = base();
   const rest = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : "";
   const [sectionId, stepPart] = rest.split("/").filter(Boolean);
   const section = sectionId ? findSection(sectionId) : undefined;
@@ -20,9 +23,9 @@ export function parse(pathname: string): Route | null {
 }
 
 export function path(route: Route | null): string {
-  if (!route) return BASE;
+  if (!route) return base();
   const section = findSection(route.sectionId)!;
-  return `${BASE}${section.id}/${section.steps[route.stepIndex].slug}`;
+  return `${base()}${section.id}/${section.steps[route.stepIndex].slug}`;
 }
 
 export function go(route: Route | null, replace = false): void {

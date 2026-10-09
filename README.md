@@ -52,6 +52,15 @@ A second entry point re-presents the same material as one continuous 3D map: eac
 - `src/v2/content/` — sections, glossary (deep-dive terms + links), screenshot evidence
 - `npm run check:links` — verify every deep-dive URL still resolves
 
+## v3 — the city (`/v3/`)
+
+The same content again, as an anime/comic city painted after Studio Ghibli. The old town across the river builds software the traditional way, by hand. In the new city, robots do the building: token generation is a robot head, the context window is a hard drive inside one, an agent is a head with hands and legs, and each model provider is its own robot. A guide robot carries you between stations; the "pages" button (or `/`) searches every page and flies you there. The backend example starts with a jungle maze (wayfinder, grilling, domain modeling), then raises a warehouse one screenshot at a time. The frontend example builds a billboard that ends on v1 of this site, and the existing-project example renovates the old house from the first station. Decisions are in [docs/adr/0006-v3-comic-city.md](docs/adr/0006-v3-comic-city.md).
+
+- Local: `npm run dev`, then open `http://localhost:5173/agentic-coding-guide/v3/`
+- Shares v2's shell and content (`src/v2/app.ts`, `src/v2/core/edition.ts`); `src/v3/content/cues.ts` swaps in the city scenes
+- `src/v3/engine/` — city layout and backdrop, shared building sites, courier robot, ink/halftone pass
+- `src/v3/scenes/` — city scenes; `robotkit.ts` is the shared cast; `sites/` holds the house, warehouse and billboard
+
 ## Deployment
 
 The site is deployed to GitHub Pages as a project site, served from `/agentic-coding-guide/` (see `vite.config.ts`).
