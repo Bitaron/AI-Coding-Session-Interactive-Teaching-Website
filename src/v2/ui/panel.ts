@@ -1,5 +1,6 @@
 import { findSection, globalIndex, sections, totalSteps } from "../content/sections";
 import type { Section, Step } from "../content/types";
+import { edition } from "../core/edition";
 import { events, setParam, store, type Params, type Route } from "../core/state";
 import { openShot } from "./dialogs";
 import { el, escapeHtml, rich } from "./markup";
@@ -59,15 +60,9 @@ export class Panel {
   private renderMap(): void {
     const b = this.body;
     b.append(
-      el("p", "v2-kicker", "A field guide · v2"),
-      el("h1", "v2-title", "Agentic coding,<br/>walked through."),
-      el(
-        "p",
-        "v2-lede",
-        rich(
-          "One continuous map. Each station is one idea, with a living model of it you can poke. Terms like [[context-rot|context rot]] or [[tool-schema|tool schema]] open a deep dive. Two real builds — a Spring Boot library and this guide itself — are replayed from their screenshots."
-        )
-      )
+      el("p", "v2-kicker", escapeHtml(edition.kicker)),
+      el("h1", "v2-title", edition.title),
+      el("p", "v2-lede", rich(edition.lede))
     );
     const list = el("ol", "v2-map-list");
     sections.forEach((s) => {
@@ -142,6 +137,12 @@ export class Panel {
         btn.type = "button";
         btn.innerHTML = `<img src="${shot.src}" alt="${escapeHtml(shot.alt)}" loading="lazy" decoding="async" /><span>${escapeHtml(shot.label)}</span>`;
         btn.addEventListener("click", () => openShot(s.evidence!, i));
+        // Lets a scene point at the part this screenshot stands for.
+        const point = (index: number) => () => events.emit("evidence", { index });
+        btn.addEventListener("pointerenter", point(i));
+        btn.addEventListener("focus", point(i));
+        btn.addEventListener("pointerleave", point(-1));
+        btn.addEventListener("blur", point(-1));
         strip.append(btn);
       });
       ev.append(strip);

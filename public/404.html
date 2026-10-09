@@ -13,13 +13,14 @@
 
       pathSegmentsToKeep = 1: this is a project page served at
       /agentic-coding-guide/, so that one segment
-      must survive the redirect untouched. Paths under /v2/ keep two
-      segments so they land on the v2 entry (v2/index.html), which carries
-      the same decoding script.
+      must survive the redirect untouched. Paths under /v2/ and /v3/ keep
+      two segments so they land on that edition's entry (v2/index.html,
+      v3/index.html), which carries the same decoding script.
     -->
     <script>
       var l = window.location;
-      var pathSegmentsToKeep = l.pathname.split("/")[2] === "v2" ? 2 : 1;
+      var edition = l.pathname.split("/")[2];
+      var pathSegmentsToKeep = edition === "v2" || edition === "v3" ? 2 : 1;
       l.replace(
         l.protocol +
           "//" +

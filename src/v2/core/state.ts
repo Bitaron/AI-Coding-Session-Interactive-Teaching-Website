@@ -63,6 +63,8 @@ export interface Events extends Record<string, unknown> {
   arrived: Route | null;
   /** Screen positions of the focused scene's term hotspots. */
   hotspots: HotspotScreen[];
+  /** The reader is pointing at screenshot `index` of the current step (-1: none). */
+  evidence: { index: number };
 }
 
 export interface HotspotScreen {

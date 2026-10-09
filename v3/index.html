@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ece7dc" />
+    <title>Agentic Coding — the city (v3)</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ece7dc'/%3E%3Crect x='6' y='7' width='20' height='17' rx='5' fill='%23f4f1ea' stroke='%231b1a17' stroke-width='2.4'/%3E%3Crect x='9' y='12' width='14' height='5' fill='%231b1a17'/%3E%3Crect x='11' y='13.5' width='3' height='2' fill='%232fb5c4'/%3E%3Crect x='18' y='13.5' width='3' height='2' fill='%232fb5c4'/%3E%3C/svg%3E" />
+    <meta name="description" content="Agentic coding as a comic-book city: the old way of building on one side of the river, robots on the other — and two real builds raised piece by piece from their screenshots." />
+    <!--
+      Same GitHub Pages deep-link decoding as the root index.html: 404.html
+      re-encodes /v3/<section>/<step> into /v3/?/<section>/<step> and this
+      restores it before the router reads location.pathname.
+      See docs/adr/0002-pushstate-routing-with-404-fallback.md.
+    -->
+    <script>
+      (function (l) {
+        if (l.search[1] === "/") {
+          var decoded = l.search
+            .slice(1)
+            .split("&")
+            .map(function (s) {
+              return s.replace(/~and~/g, "&");
+            })
+            .join("?");
+          window.history.replaceState(
+            null,
+            "",
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      })(window.location);
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript>
+      This version of the guide needs JavaScript. The original, text-first
+      version lives at <a href="../">the guide's front page</a>.
+    </noscript>
+    <script type="module" src="/src/v3/main.ts"></script>
+  </body>
+</html>

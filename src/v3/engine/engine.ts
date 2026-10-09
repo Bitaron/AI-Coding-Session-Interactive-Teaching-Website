@@ -1,67 +1,77 @@
 import {
-  ACESFilmicToneMapping,
   Clock,
   DirectionalLight,
   Fog,
-  Group,
   HemisphereLight,
-  InstancedMesh,
-  Matrix4,
-  MeshBasicMaterial,
   PerspectiveCamera,
   Plane,
   Raycaster,
-  RingGeometry,
   SRGBColorSpace,
   Scene,
   Vector2,
   Vector3,
   WebGLRenderer,
 } from "three";
-import type { Section } from "../content/types";
-import { events, store, type HotspotScreen, type Route } from "../core/state";
-import { rigFactory } from "../scenes";
-import type { Lod, Rig } from "../scenes/rig";
-import { CameraRig, type Pose } from "./camera-rig";
-import { buildGround, setGroundFog } from "./ground";
-import { INK, PAPER } from "./palette";
-import { PaperPass } from "./post";
-import { findStation, layoutWorld, regionPose, type Station, type WorldLayout } from "./world";
+import type { Section } from "../../v2/content/types";
+import { events, store, type HotspotScreen, type Route } from "../../v2/core/state";
+import { CameraRig, type Pose } from "../../v2/engine/camera-rig";
+import { cityRig, siteDefs } from "../scenes";
+import type { CityRig, Lod } from "../scenes/rig";
+import { buildCity, type City } from "./city";
+import { Courier } from "./courier";
+import { InkPass } from "./ink";
+import { findStation, layoutCity, regionPose, type CityLayout, type SitePlacement, type Station } from "./layout";
+import { PAPER } from "./palette";
 
 const BUILD_RADIUS = 72;
 const DISPOSE_RADIUS = 105;
+const SITE_BUILD = 150;
+const SITE_DISPOSE = 200;
 
 interface Live {
-  station: Station;
-  rig: Rig;
-  /** dt accumulated while this rig was skipped by its LOD's update cadence. */
+  /** World placement: a station's position or a site's. */
+  position: Vector3;
+  rotation: number;
+  rig: CityRig;
+  /** For station rigs. */
+  station?: Station;
+  /** For site rigs. */
+  site?: SitePlacement;
   pending: number;
+  /** Stagger for the distant-update cadence. */
+  slot: number;
 }
 
-/** Thrown when WebGL can't start; the UI switches to its static fallback. */
 export class WebGLUnavailable extends Error {}
 
 /**
- * The single persistent 3D world. Owns the renderer, the camera rig, the
- * ground and every station's rig; listens to the shared store for route,
- * params, quality and layout inset. It never touches the DOM outside its
- * own canvas.
+ * v3's world: same contract as v2's engine (reads the store, emits arrival
+ * and hotspots, never touches the DOM outside its canvas) with a city in
+ * place of the field-guide terrain. Differences from v2:
+ *  - shared sites: stations whose cue names a site (house, warehouse,
+ *    billboard) all look at one rig, which is told the focused stage;
+ *  - a courier robot carries every camera flight;
+ *  - the InkPass draws outlines, halftone and speed lines.
  */
 export class Engine {
-  readonly layout: WorldLayout;
+  readonly layout: CityLayout;
   private renderer: WebGLRenderer;
   private scene = new Scene();
   private camera: PerspectiveCamera;
   private cam: CameraRig;
-  private post: PaperPass;
+  private post: InkPass;
+  private city: City;
+  private courier = new Courier();
   private clock = new Clock();
-  private live = new Map<number, Live>();
+  private stationRigs = new Map<number, Live>();
+  private siteRigs = new Map<string, Live>();
   private cues: Section["steps"][number]["scene"][];
   private raf = 0;
   private time = 0;
   private frame = 0;
   private beat = 0;
   private beatKind = "";
+  private evidence = -1;
   private scale = 1;
   private frameMs = 16.7;
   private size = new Vector2();
@@ -70,65 +80,59 @@ export class Engine {
   private groundPlane = new Plane(new Vector3(0, 1, 0), 0);
   private focused: Station | null = null;
   private unsubscribers: (() => void)[] = [];
-  private ground: Group;
-  private disposeGround: () => void;
   private lastHotspotKey = "";
+  private lastCam = new Vector3();
+  private speed = 0;
+  private dpr = 1;
 
   constructor(private canvas: HTMLCanvasElement, sections: Section[]) {
     try {
-      this.renderer = new WebGLRenderer({
-        canvas,
-        antialias: false,
-        powerPreference: "high-performance",
-        failIfMajorPerformanceCaveat: false,
-      });
+      this.renderer = new WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
     } catch (err) {
       throw new WebGLUnavailable(String(err));
     }
     if (!this.renderer.getContext()) throw new WebGLUnavailable("no context");
-
     this.renderer.outputColorSpace = SRGBColorSpace;
-    this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
     this.renderer.setClearColor(PAPER, 1);
 
-    this.layout = layoutWorld(sections);
+    this.layout = layoutCity(sections, siteDefs);
     this.cues = sections.flatMap((s) => s.steps.map((st) => st.scene));
 
     this.camera = new PerspectiveCamera(42, 1, 0.5, 1400);
     this.cam = new CameraRig(this.camera, { eye: this.layout.mapEye, target: this.layout.mapTarget });
 
     this.scene.background = PAPER.clone();
-    this.scene.fog = new Fog(PAPER, 60, 260);
-    this.scene.add(new HemisphereLight(0xfffaf0, 0xb8ab92, 1.6));
-    const sun = new DirectionalLight(0xfff3e0, 1.4);
-    sun.position.set(40, 80, 30);
+    this.scene.fog = new Fog(PAPER, 60, 300);
+    // Toon materials band whatever light they get: a sky/ground fill plus
+    // one low sun from the south-west gives every form a lit and a shaded side.
+    this.scene.add(new HemisphereLight(0xfffaf0, 0xa89f8c, 1.1));
+    const sun = new DirectionalLight(0xfff6e8, 2.2);
+    sun.position.set(-60, 90, 70);
     this.scene.add(sun);
 
-    const ground = buildGround(this.layout);
-    this.scene.add(ground.group);
-    this.ground = ground.group;
-    this.disposeGround = ground.dispose;
-    this.scene.add(this.buildPedestals());
+    this.city = buildCity(this.layout);
+    this.scene.add(this.city.group, this.courier.object, this.courier.ribbon);
 
-    const isWebGL2 = this.renderer.capabilities.isWebGL2;
-    this.post = new PaperPass(isWebGL2 && store.get().quality !== "low" ? 4 : 0);
+    this.post = new InkPass(0);
 
     canvas.addEventListener("webglcontextlost", this.onContextLost);
     this.bindPointer();
     this.unsubscribers.push(
-      store.select((s) => s.route, (route) => this.goTo(route)),
+      store.select((s) => s.route, (route) => {
+        this.evidence = -1;
+        this.goTo(route);
+      }),
       store.select((s) => s.inset, () => this.resize()),
       store.select((s) => s.quality, () => this.resize()),
       events.on("beat", ({ kind }) => {
         this.beat = 1;
         this.beatKind = kind;
-      })
+      }),
+      events.on("evidence", ({ index }) => (this.evidence = index))
     );
     window.addEventListener("resize", this.resize);
     document.addEventListener("visibilitychange", this.onVisibility);
     this.resize();
-    // First load flies in from the map, so a deep link still shows where it is.
     this.goTo(store.get().route);
     this.loop();
   }
@@ -145,16 +149,14 @@ export class Engine {
     return { pose: { eye: this.fitEye(station), target: station.target }, station };
   }
 
-  /**
-   * Stations are composed ~12 units wide. On portrait screens the camera
-   * backs off along its own sightline until that width fits horizontally.
-   */
+  /** On portrait screens, back off along the sightline until ~14 units fit across. */
   private fitEye(station: Station): Vector3 {
     const aspect = this.size.x / Math.max(1, this.size.y - store.get().inset.bottom);
     const vfov = (this.camera.fov * Math.PI) / 180;
     const halfH = Math.atan(Math.tan(vfov / 2) * aspect);
-    const need = 7.2 / Math.tan(halfH);
     const offset = station.eye.clone().sub(station.target);
+    const width = station.site ? offset.length() * 0.62 : 7.2;
+    const need = width / Math.tan(halfH);
     const k = Math.min(2.8, Math.max(1, need / offset.length()));
     return station.target.clone().addScaledVector(offset, k);
   }
@@ -165,7 +167,6 @@ export class Engine {
     this.cam.resetOrbit();
     const { reducedMotion } = store.get();
     if (immediate || reducedMotion) {
-      // Reduced motion: a short paper fade instead of a flight.
       if (!immediate) await this.fade(1, 0.18);
       this.cam.cut(pose);
       if (!immediate) this.fade(0, 0.25);
@@ -194,60 +195,70 @@ export class Engine {
     });
   }
 
-  // --- stations & rigs -----------------------------------------------------
-
-  private buildPedestals(): Group {
-    const group = new Group();
-    const geo = new RingGeometry(4.6, 4.75, 64);
-    geo.rotateX(-Math.PI / 2);
-    const mat = new MeshBasicMaterial({ color: INK, transparent: true, opacity: 0.35, fog: true });
-    const rings = new InstancedMesh(geo, mat, this.layout.stations.length);
-    const m = new Matrix4();
-    this.layout.stations.forEach((st, i) => {
-      m.makeTranslation(st.position.x, 0.02, st.position.z);
-      rings.setMatrixAt(i, m);
-    });
-    group.add(rings);
-    return group;
-  }
+  // --- rigs & sites --------------------------------------------------------
 
   private syncRigs(): void {
     const focus = this.cam.focus;
     for (const st of this.layout.stations) {
+      if (st.site) continue;
       const d = Math.hypot(st.position.x - focus.x, st.position.z - focus.z);
-      const live = this.live.get(st.index);
+      const live = this.stationRigs.get(st.index);
       if (!live && d < BUILD_RADIUS) {
         const cue = this.cues[st.index];
-        const rig = rigFactory(cue.rig)(cue.preset ?? {});
-        rig.object.position.copy(st.position);
-        // Face each rig toward its camera so compositions read as authored.
-        rig.object.rotation.y = Math.atan2(st.eye.x - st.position.x, st.eye.z - st.position.z);
-        this.scene.add(rig.object);
-        this.live.set(st.index, { station: st, rig, pending: 0 });
-      } else if (live && d > DISPOSE_RADIUS && live.station !== this.focused) {
-        this.scene.remove(live.rig.object);
-        live.rig.dispose();
-        this.live.delete(st.index);
+        const rig = cityRig(cue.rig)(cue.preset ?? {});
+        this.place(rig, st.position, st.facing);
+        this.stationRigs.set(st.index, { position: st.position, rotation: st.facing, rig, station: st, pending: 0, slot: st.index % 3 });
+      } else if (live && d > DISPOSE_RADIUS && st !== this.focused) {
+        this.drop(live);
+        this.stationRigs.delete(st.index);
       }
     }
+    this.layout.sites.forEach((site, i) => {
+      const d = Math.hypot(site.position.x - focus.x, site.position.z - focus.z);
+      const live = this.siteRigs.get(site.def.id);
+      const focusedHere = this.focused?.site === site.def.id;
+      if (!live && (d < SITE_BUILD || focusedHere)) {
+        const rig = site.def.build();
+        this.place(rig, site.position, site.rotation);
+        this.siteRigs.set(site.def.id, { position: site.position, rotation: site.rotation, rig, site, pending: 0, slot: i % 3 });
+      } else if (live && d > SITE_DISPOSE && !focusedHere) {
+        this.drop(live);
+        this.siteRigs.delete(site.def.id);
+      }
+    });
+  }
+
+  private place(rig: CityRig, position: Vector3, rotation: number): void {
+    rig.object.position.copy(position);
+    rig.object.rotation.y = rotation;
+    this.scene.add(rig.object);
+  }
+
+  private drop(live: Live): void {
+    this.scene.remove(live.rig.object);
+    live.rig.dispose();
+  }
+
+  private isFocused(live: Live): boolean {
+    if (!this.focused) return false;
+    return live.station ? live.station === this.focused : live.site?.def.id === this.focused.site;
   }
 
   private lodFor(live: Live): Lod {
-    if (live.station === this.focused && !this.cam.flying) return 0;
-    const d = this.camera.position.distanceTo(live.station.position);
-    if (store.get().quality === "low") return d < 30 ? 1 : 2;
-    return d < 36 ? (live.station === this.focused ? 0 : 1) : 2;
+    const focused = this.isFocused(live);
+    if (focused && !this.cam.flying) return 0;
+    const d = this.camera.position.distanceTo(live.position);
+    const near = live.site ? 90 : 36;
+    if (store.get().quality === "low") return d < near * 0.8 ? 1 : 2;
+    return d < near ? 1 : 2;
   }
 
-  private pointerOnGround(st: Station): Vector3 | null {
+  private pointerOnGround(live: Live): Vector3 | null {
     if (!this.pointerNdc) return null;
     this.raycaster.setFromCamera(this.pointerNdc, this.camera);
     const hit = new Vector3();
     if (!this.raycaster.ray.intersectPlane(this.groundPlane, hit)) return null;
-    const local = hit.sub(st.position);
-    const live = this.live.get(st.index);
-    if (live) local.applyAxisAngle(new Vector3(0, 1, 0), -live.rig.object.rotation.y);
-    return local;
+    return hit.sub(live.position).applyAxisAngle(new Vector3(0, 1, 0), -live.rotation);
   }
 
   // --- frame loop ----------------------------------------------------------
@@ -265,44 +276,70 @@ export class Engine {
 
     const params = store.get().params;
     this.beat = Math.max(0, this.beat - dt * 1.2);
-    for (const live of this.live.values()) {
+    const all = [...this.stationRigs.values(), ...this.siteRigs.values()];
+    for (const live of all) {
       const lod = this.lodFor(live);
-      // Distant rigs tick at a third of the rate; their dt accumulates.
       live.pending += dt;
-      if (lod === 2 && this.frame % 3 !== live.station.index % 3) continue;
-      const focused = live.station === this.focused;
+      if (lod === 2 && this.frame % 3 !== live.slot) continue;
+      const focused = this.isFocused(live);
       live.rig.update({
         time: this.time,
         dt: live.pending,
         params,
-        pointer: focused ? this.pointerOnGround(live.station) : null,
+        pointer: focused ? this.pointerOnGround(live) : null,
         focused,
         beat: focused ? this.beat : 0,
         beatKind: this.beatKind,
         lod,
+        stage: live.site && focused ? (this.focused?.stage ?? 0) : null,
+        evidence: focused ? this.evidence : -1,
       });
       live.pending = 0;
     }
 
+    this.city.update(this.time);
+    this.updateCourier(dt);
     if (this.frame % 2 === 0) this.projectHotspots();
-    const fog = this.scene.fog as Fog;
-    setGroundFog(this.ground, fog.near, fog.far, this.time);
     this.post.render(this.renderer, this.scene, this.camera, this.time);
   };
 
-  /** Fog follows altitude: tight at ground level, opened up for the map view. */
+  private updateCourier(dt: number): void {
+    const flying = this.cam.flying;
+    // Speed lines follow how fast the camera is actually moving.
+    const v = this.camera.position.distanceTo(this.lastCam) / Math.max(dt, 1e-3);
+    this.lastCam.copy(this.camera.position);
+    const goal = flying ? Math.min(1, Math.max(0, (v - 10) / 70)) : 0;
+    this.speed += (goal - this.speed) * (1 - Math.exp(-5 * dt));
+    this.post.speed = this.speed;
+
+    let perch: Vector3 | null = null;
+    let look: Vector3 | null = null;
+    const st = this.focused;
+    if (st && !flying) {
+      // Hover in the upper right of the free view, a little in front of the scene.
+      const eye = this.camera.position;
+      const dir = st.target.clone().sub(eye);
+      const dist = dir.length() * 0.85;
+      dir.normalize();
+      const right = dir.clone().cross(new Vector3(0, 1, 0)).normalize();
+      const halfH = Math.tan(((this.camera.fov / 2) * Math.PI) / 180) * dist;
+      const freeW = this.size.x - store.get().inset.left;
+      const halfW = (halfH * freeW) / Math.max(1, this.size.y - store.get().inset.bottom);
+      perch = eye.clone().addScaledVector(dir, dist).addScaledVector(right, halfW * 0.66).add(new Vector3(0, halfH * 0.42, 0));
+      // Three-quarter view: half toward the scene, half toward the reader.
+      look = st.target.clone().lerp(eye, 0.6);
+    }
+    this.courier.update(dt, this.time, this.camera, flying, perch, look);
+  }
+
   private updateFog(): void {
     const fog = this.scene.fog as Fog;
     const h = Math.max(0, this.camera.position.y);
-    fog.near = 22 + h * 1.15;
-    fog.far = 105 + h * 2.0;
+    fog.near = 45 + h * 1.1;
+    fog.far = 240 + h * 2.2;
+    this.post.lineFar = 110 + h * 1.5;
   }
 
-  /**
-   * Dynamic resolution: an exponential moving average of frame time steers
-   * the offscreen render scale between 0.5× and 1× so heavy scenes on weak
-   * GPUs trade sharpness for a steady frame rate instead of stuttering.
-   */
   private adaptResolution(dt: number): void {
     const { quality } = store.get();
     this.frameMs = this.frameMs * 0.94 + dt * 1000 * 0.06;
@@ -314,8 +351,11 @@ export class Engine {
   }
 
   private projectHotspots(): void {
-    const live = this.focused ? this.live.get(this.focused.index) : undefined;
-    const spots = !this.cam.flying && live?.rig.hotspots ? live.rig.hotspots : [];
+    let spots: { term: string; label: string; anchor: import("three").Object3D }[] = [];
+    if (this.focused && !this.cam.flying) {
+      const live = this.focused.site ? this.siteRigs.get(this.focused.site) : this.stationRigs.get(this.focused.index);
+      spots = live?.rig.hotspots ?? [];
+    }
     const w = this.size.x;
     const h = this.size.y;
     const p = new Vector3();
@@ -350,16 +390,15 @@ export class Engine {
 
   private applySize(): void {
     const { quality, inset } = store.get();
-    const dpr = Math.min(window.devicePixelRatio || 1, quality === "low" ? 1 : 1.75);
+    this.dpr = Math.min(window.devicePixelRatio || 1, quality === "low" ? 1 : 1.75);
     const w = this.size.x;
     const h = this.size.y;
-    this.renderer.setPixelRatio(dpr);
+    this.renderer.setPixelRatio(this.dpr);
     this.renderer.setSize(w, h, false);
-    this.post.setSize(w * dpr, h * dpr, this.scale);
+    this.post.setSize(w * this.dpr, h * this.dpr, this.scale, this.dpr * this.scale);
     this.post.grain = quality === "low" ? 0.5 : 1;
+    this.post.setCenter((inset.left + (w - inset.left) / 2) / w, 1 - (h - inset.bottom) / 2 / h);
     this.camera.aspect = w / h;
-    // Shift the projection centre into the part of the screen the reading
-    // panel leaves free, without moving the camera itself.
     this.camera.setViewOffset(w, h, -inset.left / 2, inset.bottom / 2, w, h);
     this.camera.fov = w < 700 ? 52 : 42;
     this.camera.updateProjectionMatrix();
@@ -418,7 +457,6 @@ export class Engine {
     store.set({ webgl: false });
   };
 
-  /** World-space screen position of a region label, for the map's DOM labels. */
   projectRegions(): { sectionId: string; x: number; y: number }[] {
     const p = new Vector3();
     return this.layout.regions.map((r) => {
@@ -432,9 +470,11 @@ export class Engine {
     this.unsubscribers.forEach((u) => u());
     window.removeEventListener("resize", this.resize);
     document.removeEventListener("visibilitychange", this.onVisibility);
-    for (const live of this.live.values()) live.rig.dispose();
-    this.live.clear();
-    this.disposeGround();
+    for (const live of [...this.stationRigs.values(), ...this.siteRigs.values()]) live.rig.dispose();
+    this.stationRigs.clear();
+    this.siteRigs.clear();
+    this.city.dispose();
+    this.courier.dispose();
     this.post.dispose();
     this.renderer.dispose();
   }
