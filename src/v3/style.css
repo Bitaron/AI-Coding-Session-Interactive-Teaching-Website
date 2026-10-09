@@ -28,7 +28,7 @@
 }
 
 .v3 .v2-title {
-  font: 900 clamp(26px, 2.6vw, 36px) / 1.04 var(--letter);
+  font: 900 clamp(24px, 2.3vw, 32px) / 1.04 var(--letter);
   text-transform: uppercase;
   letter-spacing: -0.005em;
 }
@@ -101,12 +101,11 @@
   --cue-bg: #fbf8f1;
   border: 3px solid var(--ink);
   background: #fbf8f1;
-  width: min(36rem, calc(100vw - 32px));
+  width: min(36rem, calc(100vw - 24px));
   max-height: min(80vh, 44rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  max-height: min(84dvh, 44rem);
 }
-.v3 .v2-term article { padding: 20px 24px 22px; }
+.v3 .v2-term article { padding: 20px 24px 40px; }
 .v3 .v2-term header { border-bottom: 3px solid var(--ink); padding-right: 36px; }
 .v3 .v2-term .v2-kicker { color: var(--ink); margin-bottom: 10px; }
 .v3 .v2-term h2 { font: 900 26px/1.1 var(--letter); text-transform: uppercase; letter-spacing: -0.005em; }
@@ -118,18 +117,10 @@
 .v3 .v2-term-x:hover { background: var(--ink); color: var(--caption); }
 .v3 .v2-term .v2-close { display: none; }
 
-/* Phones: the card is a bottom sheet over the reading panel, not a box mid-scene. */
-@media (max-width: 899px) {
-  .v3 .v2-term {
-    width: 100%;
-    max-width: 100%;
-    margin: auto 0 0;
-    max-height: 72vh;
-    border-width: 3px 0 0;
-  }
-  .v3 .v2-term[open] { animation: v3-sheet-up 0.28s var(--ease) both; }
+@media (max-width: 520px) {
+  .v3 .v2-term article { padding: 16px 16px 36px; }
+  .v3 .v2-term h2 { font-size: 22px; }
 }
-@keyframes v3-sheet-up { from { transform: translateY(40px); opacity: 0; } }
 
 /* --- the page finder ------------------------------------------------------------------ */
 
