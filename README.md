@@ -40,6 +40,18 @@ npm run preview  # preview the production build locally
 - `docs/adr/` — architecture decision records
 - `docs/agents/issue-tracker.md` — how issues and the active `/wayfinder` map are tracked
 
+## v2 — the spatial guide (`/v2/`)
+
+A second entry point re-presents the same material as one continuous 3D map: each step is a station with a living model you can poke, the camera flies between them, and an orbital dial replaces the sidebar. The backend and frontend examples are replayed line by line from their real screenshots. Decisions are in [docs/adr/0005-v2-spatial-redesign.md](docs/adr/0005-v2-spatial-redesign.md).
+
+- Local: `npm run dev`, then open `http://localhost:5173/agentic-coding-guide/v2/`
+- `src/v2/core/` — shared store and events (the only link between 3D and DOM)
+- `src/v2/engine/` — renderer, camera flights, world layout, terrain, dynamic resolution
+- `src/v2/scenes/` — the 3D metaphors ("rigs"), one file per family
+- `src/v2/ui/` — reading panel, replays, dial, deep-dive dialogs, hotspots, sound
+- `src/v2/content/` — sections, glossary (deep-dive terms + links), screenshot evidence
+- `npm run check:links` — verify every deep-dive URL still resolves
+
 ## Deployment
 
 The site is deployed to GitHub Pages as a project site, served from `/agentic-coding-guide/` (see `vite.config.ts`).
