@@ -617,7 +617,7 @@ const vantages: Vantage[] = [
   // 2 · context: the x-ray scan, from the corner
   { eye: [17, 10, 19], target: [0, 3, 0.5] },
   // 3 · AGENT.md: the plate by the door
-  { eye: [6.5, 3.8, 13.5], target: [2.6, 2.2, 4.4] },
+  { eye: [-3, 6.5, 17], target: [2.4, 2.4, 4.4] },
   // 4 · plan: the hologram and its panels
   { eye: [-10, 11, 25], target: [0, 5.6, 2] },
   // 5 · review: the renovated house

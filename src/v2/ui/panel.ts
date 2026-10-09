@@ -5,6 +5,7 @@ import { events, setParam, store, type Params, type Route } from "../core/state"
 import { openShot } from "./dialogs";
 import { el, escapeHtml, rich } from "./markup";
 import { Replay } from "./replay";
+import { scrollCue, stripCue } from "./scrollcue";
 import { path, step as stepRoute } from "./router";
 
 const EFFORT_NAMES = ["none", "low", "medium", "high", "xhigh", "max"];
@@ -30,6 +31,7 @@ export class Panel {
   constructor() {
     this.root.setAttribute("aria-live", "polite");
     this.root.append(this.body);
+    scrollCue(this.root);
     store.select((s) => s.route, (r) => this.render(r));
     events.on("arrived", (r) => {
       if (r && this.replay && store.get().route === r) this.replay.play();
@@ -130,7 +132,10 @@ export class Panel {
 
     if (s.evidence?.length) {
       const ev = el("section", "v2-evidence");
-      ev.append(el("h2", "v2-evidence-head", `The real screenshots <span>${s.evidence.length}</span>`));
+      const head = el("h2", "v2-evidence-head", `The real screenshots <span>${s.evidence.length}</span>`);
+      const navs = el("span", "v2-strip-navs");
+      head.append(navs);
+      ev.append(head);
       const strip = el("div", "v2-strip");
       s.evidence.forEach((shot, i) => {
         const btn = el("button", "v2-thumb") as HTMLButtonElement;
@@ -147,6 +152,7 @@ export class Panel {
       });
       ev.append(strip);
       b.append(ev);
+      stripCue(strip, ev, navs);
     }
 
     const nav = el("nav", "v2-stepnav");

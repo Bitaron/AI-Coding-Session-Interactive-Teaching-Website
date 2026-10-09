@@ -1,6 +1,7 @@
 import type { ReplayLine } from "../content/types";
 import { events, store } from "../core/state";
 import { el, escapeHtml } from "./markup";
+import { scrollCue } from "./scrollcue";
 
 const WHO_LABEL: Record<ReplayLine["who"], string> = {
   user: "human",
@@ -39,6 +40,7 @@ export class Replay {
     head.append(this.button, all);
     this.list = el("ol", "v2-replay-lines");
     this.root.append(head, this.list);
+    scrollCue(this.list);
   }
 
   play(): void {
@@ -83,6 +85,16 @@ export class Replay {
     this.timer = window.setTimeout(this.tick, wait);
   };
 
+  private atBottom(): boolean {
+    const l = this.list;
+    return l.scrollTop + l.clientHeight >= l.scrollHeight - 40;
+  }
+
+  /** Scroll only the transcript, never the surrounding panel. */
+  private toBottom(): void {
+    this.list.scrollTop = this.list.scrollHeight;
+  }
+
   /** Appends a line; returns how long its typing animation takes (ms). */
   private append(line: ReplayLine, type: boolean): number {
     const li = el("li", `v2-line v2-line-${line.who}`);
@@ -90,20 +102,26 @@ export class Replay {
     if (who) li.append(el("span", "v2-line-who", who));
     const body = el("span", "v2-line-text");
     li.append(body);
-    this.list.append(li);
-    // Scroll only the transcript, never the surrounding panel.
-    this.list.scrollTo({ top: this.list.scrollHeight, behavior: store.get().reducedMotion ? "auto" : "smooth" });
+    // Follow the newest line only if the reader is already at the bottom;
+    // someone scrolled up to reread keeps their place.
+    const follow = this.atBottom();
+    this.list.insertBefore(li, this.list.querySelector(".v2-more"));
     if (!type) {
       body.textContent = line.text;
+      if (follow) this.toBottom();
       return 0;
     }
+    if (follow) this.toBottom();
     // Typewriter for human input: fast, but slow enough to read as typing.
+    // The line grows after it is placed, so keep its end in view as it types.
     const per = Math.max(8, Math.min(28, 1400 / line.text.length));
     let i = 0;
     const step = () => {
+      const stay = this.atBottom();
       body.textContent = line.text.slice(0, ++i);
       if (i < line.text.length && this.playing) window.setTimeout(step, per);
       else body.textContent = line.text;
+      if (stay) this.toBottom();
     };
     step();
     return per * line.text.length;

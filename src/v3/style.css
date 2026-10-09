@@ -94,12 +94,57 @@
 
 .v3 .v2-map-name { font: 900 16px/1.3 var(--letter); text-transform: uppercase; }
 
+/* --- deep-dive card: a comic panel over a lightly dimmed scene ----------------------- */
+
+.v3 dialog::backdrop { background: rgba(42, 36, 32, 0.28); }
+.v3 .v2-term {
+  --cue-bg: #fbf8f1;
+  border: 3px solid var(--ink);
+  background: #fbf8f1;
+  width: min(36rem, calc(100vw - 32px));
+  max-height: min(80vh, 44rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.v3 .v2-term article { padding: 20px 24px 22px; }
+.v3 .v2-term header { border-bottom: 3px solid var(--ink); padding-right: 36px; }
+.v3 .v2-term .v2-kicker { color: var(--ink); margin-bottom: 10px; }
+.v3 .v2-term h2 { font: 900 26px/1.1 var(--letter); text-transform: uppercase; letter-spacing: -0.005em; }
+.v3 .v2-term-def { font-size: 18px; }
+.v3 .v2-term-why { border-left-width: 4px; background: #fdf1ea; padding: 8px 12px; }
+.v3 .v2-term-links { border-top-width: 2px; }
+.v3 .v2-term-links a { font-weight: 600; }
+.v3 .v2-term-x { font-size: 26px; border: 2px solid var(--ink); background: var(--caption); line-height: 0.9; }
+.v3 .v2-term-x:hover { background: var(--ink); color: var(--caption); }
+.v3 .v2-term .v2-close { display: none; }
+
+/* Phones: the card is a bottom sheet over the reading panel, not a box mid-scene. */
+@media (max-width: 899px) {
+  .v3 .v2-term {
+    width: 100%;
+    max-width: 100%;
+    margin: auto 0 0;
+    max-height: 72vh;
+    border-width: 3px 0 0;
+  }
+  .v3 .v2-term[open] { animation: v3-sheet-up 0.28s var(--ease) both; }
+}
+@keyframes v3-sheet-up { from { transform: translateY(40px); opacity: 0; } }
+
 /* --- the page finder ------------------------------------------------------------------ */
 
 .v3 .v2-finder-btn { border-color: var(--ink); background: var(--caption); font-weight: 600; }
 .v3 .v2-finder { border: 3px solid var(--ink); }
 .v3 .v2-finder-sec { font: 900 12px/1 var(--letter); color: var(--ink); }
 .v3 .v2-finder-list [aria-selected="true"] a { background: var(--caption); }
+
+.v3 .v2-ctl { white-space: nowrap; }
+
+/* Narrow phones: keep pages + sound; quality stays on auto, which adapts itself. */
+@media (max-width: 520px) {
+  .v3 .v2-ctl[data-ctl="quality"],
+  .v3 a.v2-ctl { display: none; }
+}
 
 @media (max-width: 899px) {
   .v3 .v2-finder-btn span { display: none; }

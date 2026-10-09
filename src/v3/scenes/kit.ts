@@ -11,10 +11,18 @@ import {
   SpriteMaterial,
   type Side,
 } from "three";
-import { Bin } from "../../v2/scenes/kit";
+import { Bin, label as v2Label, type LabelOpts } from "../../v2/scenes/kit";
 import { CYAN, GREEN, INK, ORANGE } from "../engine/palette";
 
-export { anchor, Bin, budget, cardTexture, geo, label, textTexture, tint } from "../../v2/scenes/kit";
+export { anchor, Bin, budget, cardTexture, geo, textTexture, tint } from "../../v2/scenes/kit";
+
+/**
+ * v2's camera-facing label, but on a paper card by default: against v3's
+ * trees and sky, bare text disappears.
+ */
+export function label(bin: Bin, text: string, opts: LabelOpts = {}): Sprite {
+  return v2Label(bin, text, { background: "rgba(251, 248, 241, 0.94)", ...opts });
+}
 
 // --- materials -------------------------------------------------------------
 

@@ -3,6 +3,7 @@ import { globalIndex, sections } from "../content/sections";
 import { store, type Route } from "../core/state";
 import { el, escapeHtml } from "./markup";
 import { go, path } from "./router";
+import { scrollCue } from "./scrollcue";
 
 /**
  * The page finder: every station in one searchable list. Opened from the
@@ -76,6 +77,7 @@ export function mountFinder(root: HTMLElement): Finder {
   const input = dialog.querySelector("input")!;
   const list = dialog.querySelector("ol")!;
   const empty = dialog.querySelector<HTMLElement>(".v2-finder-empty")!;
+  scrollCue(list);
   let shown: Entry[] = [];
   let active = 0;
 
