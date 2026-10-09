@@ -50,6 +50,7 @@ export class InkPass {
         uFar: { value: 1400 },
         uLineFar: { value: 160 },
         uPx: { value: 1 },
+        uSS: { value: 1 },
         uTime: { value: 0 },
         uFade: { value: 0 },
         uGrain: { value: 1 },
@@ -67,7 +68,7 @@ export class InkPass {
         uniform sampler2D tScene;
         uniform sampler2D tDepth;
         uniform vec2 uTexel;
-        uniform float uNear, uFar, uLineFar, uPx, uTime, uFade, uGrain, uSpeed, uAspect;
+        uniform float uNear, uFar, uLineFar, uPx, uSS, uTime, uFade, uGrain, uSpeed, uAspect;
         uniform vec2 uCenter;
         uniform vec3 uInk, uPaper;
         varying vec2 vUv;
@@ -85,17 +86,23 @@ export class InkPass {
         float hash1(float n) { return fract(sin(n * 127.1) * 43758.5453); }
 
         void main() {
-          vec3 col = texture2D(tScene, vUv).rgb;
+          // Supersampled: average four taps inside this pixel's footprint.
+          vec2 h = uTexel * 0.5 * clamp(uSS - 1.0, 0.0, 1.0);
+          vec3 col = 0.25 * (texture2D(tScene, vUv + vec2(-h.x, -h.y)).rgb + texture2D(tScene, vUv + vec2(h.x, -h.y)).rgb
+            + texture2D(tScene, vUv + vec2(-h.x, h.y)).rgb + texture2D(tScene, vUv + vec2(h.x, h.y)).rgb);
 
-          // --- halftone: dots grow as tone darkens; highlights stay clean
-          // Tone is judged as printed (sRGB), not in linear light.
+          // --- vibrance: lift saturation the way painted backgrounds do
+          float grey = dot(col, vec3(0.2126, 0.7152, 0.0722));
+          col = max(mix(vec3(grey), col, 1.1), 0.0);
+
+          // --- halftone, only in the deepest shade (a comic accent, not a texture)
           float lum = dot(pow(col, vec3(0.4545)), vec3(0.299, 0.587, 0.114));
-          vec2 px = gl_FragCoord.xy / (5.0 * uPx);
+          vec2 px = gl_FragCoord.xy / (4.0 * uPx / uSS);
           vec2 rot = mat2(0.7071, -0.7071, 0.7071, 0.7071) * px;
-          float r = smoothstep(0.52, 0.12, lum) * 0.6;
+          float r = smoothstep(0.38, 0.08, lum) * 0.5;
           float d = length(fract(rot) - 0.5);
-          float dots = 1.0 - smoothstep(r - 0.07, r + 0.02, d);
-          col = mix(col, col * 0.62, dots * step(0.01, r));
+          float dots = 1.0 - smoothstep(r - 0.06, r + 0.02, d);
+          col = mix(col, col * 0.75, dots * step(0.01, r));
 
           // --- ink: Laplacian of 1/z flags silhouettes and creases
           float zc = viewZ(vUv);
@@ -110,7 +117,7 @@ export class InkPass {
           // Thin out with distance; the sky never gets a line.
           edge *= 1.0 - smoothstep(uLineFar * 0.35, uLineFar, zc);
           edge *= step(zc, uFar * 0.98);
-          col = mix(col, uInk, edge);
+          col = mix(col, uInk, edge * 0.92);
 
           // --- speed lines, radiating from the centre of the free view
           if (uSpeed > 0.01) {
@@ -129,7 +136,7 @@ export class InkPass {
           // --- paper: static fibre plus a slow grain
           float fibre = hash(floor(vUv * vec2(900.0 * uAspect, 900.0)));
           float grain = hash(vUv * 731.0 + fract(uTime * 0.07));
-          col += (fibre - 0.5) * 0.02 * uGrain + (grain - 0.5) * 0.02 * uGrain;
+          col += (fibre - 0.5) * 0.008 * uGrain + (grain - 0.5) * 0.008 * uGrain;
           col = mix(col, uPaper, uFade);
           gl_FragColor = vec4(col, 1.0);
           #include <colorspace_fragment>
@@ -143,7 +150,10 @@ export class InkPass {
     this.scene.add(quad);
   }
 
-  /** `px` is device pixels per CSS pixel × render scale, so dots and lines keep their size. */
+  /**
+   * `scale` is render pixels per canvas pixel (above 1 = supersampled);
+   * `dpr` is render pixels per CSS pixel, so dots and lines keep their size.
+   */
   setSize(width: number, height: number, scale: number, dpr: number): void {
     const w = Math.max(1, Math.round(width * scale));
     const h = Math.max(1, Math.round(height * scale));
@@ -152,6 +162,7 @@ export class InkPass {
     u.uTexel.value.set(1 / w, 1 / h);
     u.uAspect.value = width / Math.max(1, height);
     u.uPx.value = dpr;
+    u.uSS.value = scale;
   }
 
   set fade(v: number) {

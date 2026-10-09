@@ -36,6 +36,11 @@ export class Courier {
   private vel = new Vector3();
   private lean = 0;
   private ready = false;
+  // Squash-and-stretch spring: a crouch before take-off, a settle on landing.
+  private wasFlying = false;
+  private flutter = 0;
+  private squash = 0;
+  private squashVel = 0;
 
   constructor() {
     const b = this.bin;
@@ -129,6 +134,14 @@ export class Courier {
     const leanGoal = Math.min(1, speed / 25) * 1.15;
     this.lean += (leanGoal - this.lean) * (1 - Math.exp(-4 * dt));
     this.body.group.rotation.x = this.lean;
+    if (flying !== this.wasFlying) {
+      this.squashVel += flying ? 9 : 7;
+      this.wasFlying = flying;
+    }
+    this.squashVel += (-70 * this.squash - 9 * this.squashVel) * dt;
+    this.squash += this.squashVel * dt;
+    const sq = Math.max(-0.4, Math.min(0.4, this.squash));
+    this.body.group.scale.set(0.62 * (1 + sq * 0.35), 0.62 * (1 - sq * 0.55), 0.62 * (1 + sq * 0.35));
     this.body.head.group.rotation.x = -this.lean * 0.7;
     const k = Math.min(1, speed / 25);
     this.body.reach("R", new Vector3(0.45, 1.25 + k * 0.6, 0.3 + k * 0.5), 0.3 + k * 0.7);
@@ -144,6 +157,7 @@ export class Courier {
   }
 
   private updateScarf(dt: number, right: Vector3): void {
+    this.flutter += dt;
     this.object.updateMatrixWorld();
     const neck = this.body.neck.getWorldPosition(new Vector3());
     // Each point trails the one before it with a little droop.
@@ -152,6 +166,9 @@ export class Courier {
     for (let i = 1; i < SCARF; i++) {
       const p = this.trail[i];
       p.y -= dt * 0.6;
+      // The breeze lifts and flutters the loose end.
+      p.x += Math.sin(this.flutter * 7 + i * 0.9) * dt * 0.35 * (i / SCARF);
+      p.y += Math.cos(this.flutter * 5 + i * 1.3) * dt * 0.25 * (i / SCARF);
       const prev = this.trail[i - 1];
       const d = p.clone().sub(prev);
       const len = d.length();

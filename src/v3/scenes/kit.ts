@@ -23,7 +23,7 @@ let gradient: DataTexture | null = null;
 /** Three hard tone steps — shadow, mid, lit — shared by every toon material. */
 function toonRamp(): DataTexture {
   if (!gradient) {
-    gradient = new DataTexture(new Uint8Array([150, 205, 255]), 3, 1, RedFormat);
+    gradient = new DataTexture(new Uint8Array([165, 215, 255]), 3, 1, RedFormat);
     gradient.minFilter = NearestFilter;
     gradient.magFilter = NearestFilter;
     gradient.needsUpdate = true;

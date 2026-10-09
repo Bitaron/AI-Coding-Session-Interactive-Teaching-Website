@@ -60,8 +60,8 @@ const SCRIPT: { words: string[]; logits: number[] }[] = [
   { words: ["file", "test", "spec", "diff", "song"], logits: [1.9, 1.7, 1.0, 0.8, -2.1] },
 ];
 
-const TICKER_RIGHT = 4.9;
-const TICKER_LEFT = -4.3;
+const TICKER_RIGHT = 3.3; // clear of the dial in the bottom-right corner
+const TICKER_LEFT = -4.9;
 const THINKERS = 40;
 
 function speaker(reasoning: boolean): CityRig {
@@ -116,6 +116,7 @@ function speaker(reasoning: boolean): CityRig {
   const thinkers = new InstancedMesh(geo(bin, new BoxGeometry(0.07, 0.07, 0.07)), toon(bin, "#3a3833"), THINKERS);
   thinkers.instanceMatrix.setUsage(DynamicDrawUsage);
   thinkers.count = 0;
+  thinkers.frustumCulled = false; // starts empty: a bounds check would cull it forever
   if (reasoning) head.bay!.add(thinkers);
   const ages: number[] = [];
 
@@ -132,11 +133,17 @@ function speaker(reasoning: boolean): CityRig {
   const drawCounter = () => {
     const c = counterCanvas.getContext("2d")!;
     c.clearRect(0, 0, 768, 160);
+    // A scoreboard card, so the count reads against trees and sky.
+    c.fillStyle = "#fbf8f1";
+    c.strokeStyle = "#2a2420";
+    c.lineWidth = 6;
+    c.fillRect(3, 3, 762, 154);
+    c.strokeRect(3, 3, 762, 154);
     c.font = '600 46px ui-monospace, "SF Mono", Menlo, monospace';
     c.fillStyle = "#5d584d";
-    c.fillText(`thinking  ${String(thinkingCount).padStart(4)}`, 10, 60);
+    c.fillText(`thinking  ${String(thinkingCount).padStart(4)}`, 30, 66);
     c.fillStyle = "#1b1a17";
-    c.fillText(`visible   ${String(visibleCount).padStart(4)}`, 10, 130);
+    c.fillText(`visible   ${String(visibleCount).padStart(4)}`, 30, 128);
     counterTex.needsUpdate = true;
   };
   drawCounter();
@@ -280,7 +287,7 @@ function drive(): CityRig {
   head.bay!.add(mount);
   const platter = new Group();
   mount.add(platter);
-  platter.add(new Mesh(geo(bin, new CylinderGeometry(0.42, 0.42, 0.025, 72)), toon(bin, STEEL)));
+  platter.add(new Mesh(geo(bin, new CylinderGeometry(0.47, 0.47, 0.025, 72)), toon(bin, STEEL)));
   const spindle = new Mesh(geo(bin, new CylinderGeometry(0.05, 0.05, 0.06, 16)), toon(bin, INK));
   mount.add(spindle);
 
@@ -291,17 +298,20 @@ function drive(): CityRig {
   for (let k = 0; k < CAPACITY; k++) {
     const r = 0.1 + (pitch * theta) / (Math.PI * 2);
     track.push({ r, a: theta });
-    theta += 0.034 / r;
+    theta += 0.045 / r;
   }
-  const blocks = new InstancedMesh(geo(bin, new BoxGeometry(0.03, 0.018, 0.026)), toon(bin, 0xffffff), CAPACITY);
+  const blocks = new InstancedMesh(geo(bin, new BoxGeometry(0.042, 0.03, 0.038)), toon(bin, 0xffffff), CAPACITY);
   const o = new Object3D();
   track.forEach(({ r, a }, k) => {
     o.position.set(Math.cos(a) * r, 0.02, Math.sin(a) * r);
     o.rotation.set(0, -a, 0);
     o.updateMatrix();
     blocks.setMatrixAt(k, o.matrix);
+    // Colours must exist before the first draw, or the shader is built without them.
+    blocks.setColorAt(k, INK);
   });
   blocks.count = 0;
+  blocks.frustumCulled = false;
   platter.add(blocks);
 
   const usableR = track[Math.round(CAPACITY * USABLE)].r + pitch / 2;
@@ -385,6 +395,7 @@ function twins(): CityRig {
     const head = standingHead(bin, object, x, 2.0, 1.9, true);
     const chips = new InstancedMesh(chipGeo, toon(bin, INK), 14);
     chips.count = 0;
+    chips.frustumCulled = false;
     head.bay!.add(chips);
     const o = new Object3D();
     for (let k = 0; k < 14; k++) {
@@ -431,6 +442,7 @@ function twins(): CityRig {
   const carried = new InstancedMesh(geo(bin, new BoxGeometry(0.17, 0.1, 0.17)), toon(bin, CYAN, { emissive: CYAN, emissiveIntensity: 0.3 }), 3);
   carried.instanceMatrix.setUsage(DynamicDrawUsage);
   carried.count = 0;
+  carried.frustumCulled = false;
   object.add(carried);
   const slot = new Vector3(0, 1.15, 1.0);
 

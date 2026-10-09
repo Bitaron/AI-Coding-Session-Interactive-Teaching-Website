@@ -21,7 +21,8 @@ import { buildCity, type City } from "./city";
 import { Courier } from "./courier";
 import { InkPass } from "./ink";
 import { findStation, layoutCity, regionPose, type CityLayout, type SitePlacement, type Station } from "./layout";
-import { PAPER } from "./palette";
+import { HAZE } from "./palette";
+import { buildSky, SUN_DIR, type Sky } from "./sky";
 
 const BUILD_RADIUS = 72;
 const DISPOSE_RADIUS = 105;
@@ -62,6 +63,7 @@ export class Engine {
   private post: InkPass;
   private city: City;
   private courier = new Courier();
+  private sky: Sky = buildSky();
   private clock = new Clock();
   private stationRigs = new Map<number, Live>();
   private siteRigs = new Map<string, Live>();
@@ -93,7 +95,7 @@ export class Engine {
     }
     if (!this.renderer.getContext()) throw new WebGLUnavailable("no context");
     this.renderer.outputColorSpace = SRGBColorSpace;
-    this.renderer.setClearColor(PAPER, 1);
+    this.renderer.setClearColor(HAZE, 1);
 
     this.layout = layoutCity(sections, siteDefs);
     this.cues = sections.flatMap((s) => s.steps.map((st) => st.scene));
@@ -101,17 +103,19 @@ export class Engine {
     this.camera = new PerspectiveCamera(42, 1, 0.5, 1400);
     this.cam = new CameraRig(this.camera, { eye: this.layout.mapEye, target: this.layout.mapTarget });
 
-    this.scene.background = PAPER.clone();
-    this.scene.fog = new Fog(PAPER, 60, 300);
+    // Distance fades toward the colour of the horizon air, not to grey.
+    this.scene.fog = new Fog(HAZE, 60, 300);
     // Toon materials band whatever light they get: a sky/ground fill plus
     // one low sun from the south-west gives every form a lit and a shaded side.
-    this.scene.add(new HemisphereLight(0xfffaf0, 0xa89f8c, 1.1));
-    const sun = new DirectionalLight(0xfff6e8, 2.2);
-    sun.position.set(-60, 90, 70);
+    // Warm sun, cool sky fill, green bounce from the ground: lit sides glow
+    // gold, shaded sides go blue-green, as in a painted background.
+    this.scene.add(new HemisphereLight(0xcfe4ff, 0xa9c58a, 1.25));
+    const sun = new DirectionalLight(0xfff0d2, 2.7);
+    sun.position.copy(SUN_DIR).multiplyScalar(120);
     this.scene.add(sun);
 
     this.city = buildCity(this.layout);
-    this.scene.add(this.city.group, this.courier.object, this.courier.ribbon);
+    this.scene.add(this.sky.group, this.city.group, this.courier.object, this.courier.ribbon);
 
     this.post = new InkPass(0);
 
@@ -298,6 +302,7 @@ export class Engine {
     }
 
     this.city.update(this.time);
+    this.sky.update(this.time, dt, this.camera);
     this.updateCourier(dt);
     if (this.frame % 2 === 0) this.projectHotspots();
     this.post.render(this.renderer, this.scene, this.camera, this.time);
@@ -395,7 +400,11 @@ export class Engine {
     const h = this.size.y;
     this.renderer.setPixelRatio(this.dpr);
     this.renderer.setSize(w, h, false);
-    this.post.setSize(w * this.dpr, h * this.dpr, this.scale, this.dpr * this.scale);
+    // Supersample for crisp edges: render up to ~2.2 pixels per CSS pixel
+    // and let the ink pass average them down. Dynamic resolution scales this.
+    const ss = quality === "low" ? 1 : Math.min(1.4, 2.2 / this.dpr);
+    const scale = this.scale * ss;
+    this.post.setSize(w * this.dpr, h * this.dpr, scale, this.dpr * scale);
     this.post.grain = quality === "low" ? 0.5 : 1;
     this.post.setCenter((inset.left + (w - inset.left) / 2) / w, 1 - (h - inset.bottom) / 2 / h);
     this.camera.aspect = w / h;
@@ -474,6 +483,7 @@ export class Engine {
     this.stationRigs.clear();
     this.siteRigs.clear();
     this.city.dispose();
+    this.sky.dispose();
     this.courier.dispose();
     this.post.dispose();
     this.renderer.dispose();

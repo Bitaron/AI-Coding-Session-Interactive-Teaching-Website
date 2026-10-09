@@ -146,8 +146,8 @@ const CUES: Record<string, Record<string, CityCue>> = {
   },
 
   backend: {
-    brief: site("warehouse", 0, "A warehouse for a file manager, in the east docks. Kickoff: the survey drone stakes out the plot; “too big for one session” splits it into lots — one per decision. Each screenshot builds one piece; point at a screenshot to see which."),
-    grilling: site("warehouse", 1, "Eight screenshots, eight foundation slabs. A slab with an orange edge is a decision the human overrode."),
+    brief: site("warehouse", 0, "A warehouse for a file manager, in the east docks — but a jungle maze stands between the agent and the plot. Wayfinder: it feels its way through, hits dead ends (?), backs out, and every cell it walks is charted in cyan. Meanwhile the two kickoff screenshots stake out the plot and split it into lots, one per decision; point at a screenshot to see its piece."),
+    grilling: site("warehouse", 1, "Grilling: at every fork the agent asks the human on the terrace, with its own recommendation — the orange answers overrule it. Domain modeling: each answer goes into the hologram map, and once the map is whole the agent runs the maze again without asking. Behind it, eight screenshots pour eight foundation slabs; an orange edge marks a decision the human overrode."),
     tracker: site("warehouse", 2, "The site board goes up: issue #1 and its decision tickets #11–#19 as lights. Four screenshots: legs, panel, header, lights."),
     baseline: site("warehouse", 3, "Ticket #11: the first corner column. A helper drone researched in the background while the crew asked the human."),
     handoff: site("warehouse", 4, "Computer 2's cabin writes the missing state down — tracker doc, AGENTS.md pointer — packs it, and the crate flies to Computer 1, which lights up the frontier."),

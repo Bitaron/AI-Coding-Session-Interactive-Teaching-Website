@@ -17,6 +17,7 @@ import {
 import { backend } from "../../../v2/content/backend";
 import { ARMOR, CONCRETE, CYAN, GLASS, GREEN, INK, ORANGE, STEEL } from "../../engine/palette";
 import { anchor, Bin, geo, glow, label, sfx, textTexture, toon } from "../kit";
+import { buildMaze } from "../maze";
 import { damp, type CityFrame, type CityRig, type Hotspot, type SiteDef, type Vantage } from "../rig";
 import { buildBody, buildHead } from "../robotkit";
 
@@ -27,6 +28,9 @@ import { buildBody, buildHead } from "../robotkit";
 // and later ones aren't there yet. Pointing at a screenshot in the panel
 // lights the part it stands for. Site-local: front faces +z, the shed's
 // footprint is 26 × 16 centred on the origin, eaves at 9, ridge at 11.
+// In front of the plot (z 11–23) a hedge maze stands for the first two
+// stages — the wayfinder search and the grilling (see ../maze.ts) — and
+// sinks into a forecourt once the destination is pinned down.
 
 type V3 = [number, number, number];
 
@@ -57,9 +61,11 @@ const SOUNDS = ["CLANK!", "WHIRR", "BZZT!", "KA-CHUNK", "SNAP!", "THUNK"];
 // the replay: “the overrides”, plan-mode tokens, no admin API, fully embedded.
 const OVERRIDDEN = new Set([1, 5, 6, 7]);
 
+// Stages 0 and 1 also get the maze's terms (wayfinder; grilling and
+// domain-modeling), anchored on the maze itself — added in buildWarehouse.
 const SPOTS: [string, string, V3][][] = [
-  [["wayfinder", "wayfinder map", [0, 1, 0]], ["one-ticket-per-session", "one lot per decision", [9, 1, 4]]],
-  [["grilling", "a recommendation per question", [-6, 1.5, 4]], ["human-in-the-loop", "the human overrides", [6, 1.5, -4]]],
+  [["one-ticket-per-session", "one lot per decision", [9, 1, 4]]],
+  [["human-in-the-loop", "the human overrides", [6, 1.5, -4]]],
   [["wayfinder", "map on GitHub", [-18, 5.5, 13]], ["one-ticket-per-session", "one ticket per session", [-15, 2, 13]]],
   [["subagent", "research in the background", [-9, 7, 12]], ["one-ticket-per-session", "one ticket, one session", [-13, 9, 8]]],
   [["agents-md", "AGENTS.md", [18, 3, -4]], ["repo-as-memory", "the repo carries the state", [0, 6, 3]]],
@@ -73,8 +79,9 @@ const SPOTS: [string, string, V3][][] = [
 ];
 
 export const VANTAGES: Vantage[] = [
-  { eye: [10, 17, 31], target: [0, 0, 0] },
-  { eye: [-12, 14, 28], target: [0, 0.5, 0] },
+  // 0–1 look over the maze to the plot behind it.
+  { eye: [9, 20, 39], target: [0, 0, 8] },
+  { eye: [-3, 27, 47], target: [2.5, 0.5, 12] },
   { eye: [-6, 7, 29], target: [-15, 3, 10] },
   { eye: [-1, 7.5, 27], target: [-11, 4, 7] },
   { eye: [0, 15, 35], target: [0, 2, -1] },
@@ -355,7 +362,7 @@ function buildWarehouse(): CityRig {
   // The crew: a robot on the ground and a drone with a welding beam.
   const worker = buildBody(bin);
   worker.group.scale.setScalar(1.3);
-  worker.group.position.set(0, 0, 12);
+  worker.group.position.set(14, 0, 10);
   const drone = group(buildHead(bin).group, new Mesh(geo(bin, new TorusGeometry(0.75, 0.06, 6, 28).rotateX(Math.PI / 2)), m.ink));
   const beamMat = glow(bin, CYAN, 0.55);
   const beam = new Mesh(geo(bin, new CylinderGeometry(0.06, 0.18, 1, 8).translate(0, -0.5, 0)), beamMat);
@@ -385,7 +392,17 @@ function buildWarehouse(): CityRig {
   });
   const labelCache = new Map<number, Sprite>();
 
+  // The maze for stages 0–1: wayfinder, then grilling with a domain model.
+  const maze = buildMaze(bin);
+  maze.group.position.set(0, 0, 17);
+  object.add(maze.group);
+
   const spotSets: Hotspot[][] = SPOTS.map((set) => set.map(([term, text, p]) => ({ term, label: text, anchor: anchor(object, ...p) })));
+  spotSets[0].unshift({ term: "wayfinder", label: "find the way", anchor: maze.anchors.maze });
+  spotSets[1].unshift(
+    { term: "grilling", label: "it asks at every fork", anchor: maze.anchors.human },
+    { term: "domain-modeling", label: "its own map", anchor: maze.anchors.model }
+  );
 
   // --- state ------------------------------------------------------------------
   let held = 0;
@@ -495,6 +512,7 @@ function buildWarehouse(): CityRig {
         c.pile.visible = c.s > 0.01;
       }
       cabins.forEach((c) => (c.visible = held >= 4));
+      maze.update(ctx, held);
 
       const detail = ctx.lod < 2;
       worker.group.visible = drone.visible = detail;
@@ -517,6 +535,8 @@ function buildWarehouse(): CityRig {
         // The crew follows whatever is being built; otherwise waits by the dock.
         const focus = active ? focusV.copy(active.holder.position).add(active.top) : null;
         if (focus) walkTo.set(focus.x * 0.85, 0, Math.max(focus.z + 3.5, -4));
+        // While the maze stands, wait beside it rather than inside it.
+        else if (held <= 1) walkTo.set(14, 0, 10);
         else walkTo.set(-2, 0, 13);
         const wp = worker.group.position;
         const d = Math.hypot(walkTo.x - wp.x, walkTo.z - wp.z);

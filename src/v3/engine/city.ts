@@ -1,22 +1,27 @@
 import {
   BoxGeometry,
   BufferGeometry,
+  CanvasTexture,
   Color,
+  CircleGeometry,
   CylinderGeometry,
   DoubleSide,
   Float32BufferAttribute,
   Group,
+  IcosahedronGeometry,
   InstancedMesh,
   Matrix4,
   Mesh,
   MeshToonMaterial,
   Object3D,
   PlaneGeometry,
+  RepeatWrapping,
   RingGeometry,
-  SphereGeometry,
+  SRGBColorSpace,
   TorusGeometry,
   Vector3,
 } from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { hash } from "../../v2/scenes/rig";
 import { Bin, geo, toon } from "../scenes/kit";
 import { buildHead, type RobotHead } from "../scenes/robotkit";
@@ -28,6 +33,7 @@ import {
   CONCRETE,
   CYAN,
   GLASS,
+  GRASS,
   GROUND,
   LEAF,
   ROOF,
@@ -121,6 +127,48 @@ function roofGeometry(): BufferGeometry {
   return g;
 }
 
+/**
+ * A painted meadow: the base green with soft darker and sunnier patches
+ * and short brush strokes of grass, tiled every ~12 units. Breaks up the
+ * flat green the way a background painter would.
+ */
+function meadowTexture(bin: Bin): CanvasTexture {
+  const size = 256;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = `#${GRASS.getHexString()}`;
+  ctx.fillRect(0, 0, size, size);
+  const patch = (x: number, y: number, r: number, color: string) => {
+    // Draw wrapped so the tile repeats without seams.
+    for (const dx of [-size, 0, size]) {
+      for (const dy of [-size, 0, size]) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(x + dx, y + dy, r, r * 0.7, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  };
+  for (let i = 0; i < 7; i++) patch(hash(i * 3.1) * size, hash(i * 7.3) * size, 60 + hash(i * 1.9) * 70, i % 2 ? "rgba(70,120,60,0.09)" : "rgba(220,230,120,0.1)");
+  ctx.lineWidth = 1.6;
+  for (let i = 0; i < 260; i++) {
+    const x = hash(i * 5.7) * size;
+    const y = hash(i * 9.1) * size;
+    ctx.strokeStyle = i % 2 ? "rgba(60,110,50,0.35)" : "rgba(190,220,120,0.4)";
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (hash(i) - 0.5) * 3, y - 5 - hash(i * 2.2) * 4);
+    ctx.stroke();
+  }
+  const tex = bin.add(new CanvasTexture(c));
+  tex.wrapS = tex.wrapT = RepeatWrapping;
+  tex.repeat.set(70, 70);
+  tex.colorSpace = SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 export function buildCity(layout: CityLayout): City {
   const bin = new Bin();
   const group = new Group();
@@ -129,7 +177,8 @@ export function buildCity(layout: CityLayout): City {
   const RIVER_HALF = 13;
 
   // --- ground, river, roads ---------------------------------------------------
-  const groundMat = toon(bin, GROUND);
+  // Green underfoot almost everywhere: the city is built into a meadow.
+  const groundMat = toon(bin, 0xffffff, { map: meadowTexture(bin) });
   const west = new Mesh(geo(bin, new PlaneGeometry(900, 1600)), groundMat);
   west.rotation.x = -Math.PI / 2;
   west.position.set(RX - RIVER_HALF - 450, 0, 0);
@@ -137,6 +186,11 @@ export function buildCity(layout: CityLayout): City {
   east.rotation.x = -Math.PI / 2;
   east.position.set(RX + RIVER_HALF + 600, 0, 0);
   group.add(west, east);
+  // The central plaza is paved; stations stand on its rim of lawn and trees.
+  const plaza = new Mesh(geo(bin, new CircleGeometry(64, 96)), toon(bin, GROUND));
+  plaza.rotation.x = -Math.PI / 2;
+  plaza.position.y = 0.012;
+  group.add(plaza);
 
   const water = new Mesh(geo(bin, new PlaneGeometry(RIVER_HALF * 2, 1600)), toon(bin, WATER));
   water.rotation.x = -Math.PI / 2;
@@ -244,8 +298,10 @@ export function buildCity(layout: CityLayout): City {
   const oldBlocks: Block[] = [];
   const newBlocks: Block[] = [];
   const trees: { x: number; z: number; s: number }[] = [];
-  const oldColors = [BRICK, CONCRETE, TIMBER, new Color("#c99a6b"), new Color("#a8836a")];
-  const newColors = [ARMOR, STEEL, new Color("#dfe3e0"), new Color("#b7c3c6"), GLASS];
+  // Old town: plaster walls in cream, ochre and rose, with brick here and there.
+  const oldColors = [CONCRETE, new Color("#f6eedb"), new Color("#e9c27a"), new Color("#efc3a8"), BRICK, new Color("#d9b48a")];
+  // New city: white and pale-sea towers with sky-blue glass.
+  const newColors = [ARMOR, new Color("#e6f2f1"), new Color("#cfe7ea"), GLASS, new Color("#f6eedd"), STEEL];
 
   let n = 0;
   for (let gx = -330; gx <= 330; gx += 14) {
@@ -303,10 +359,10 @@ export function buildCity(layout: CityLayout): City {
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   };
-  const oldMat = windowed(toon(bin, 0xffffff), new Color("#4d4237"), [2.6, 3.0], "old");
+  const oldMat = windowed(toon(bin, 0xffffff), new Color("#456a80"), [2.6, 3.0], "old");
   const oldMesh = new InstancedMesh(box, oldMat, Math.max(1, oldBlocks.length));
   place(oldMesh, oldBlocks);
-  const newMat = windowed(toon(bin, 0xffffff), new Color("#5f8f96"), [2.0, 3.4], "new");
+  const newMat = windowed(toon(bin, 0xffffff), new Color("#3c88ab"), [2.0, 3.4], "new");
   const newMesh = new InstancedMesh(box, newMat, Math.max(1, newBlocks.length));
   place(newMesh, newBlocks);
   group.add(oldMesh, newMesh);
@@ -320,24 +376,93 @@ export function buildCity(layout: CityLayout): City {
       o.scale.set(b.w + 0.4, Math.min(b.w, b.d) * 0.45, b.d + 0.4);
       o.updateMatrix();
       roofs.setMatrixAt(i, o.matrix);
-      roofs.setColorAt(i, i % 3 === 0 ? new Color("#8c5a43") : ROOF);
+      // Mostly terracotta; some weathered copper, like a harbour town.
+      roofs.setColorAt(i, i % 4 === 0 ? new Color("#5f9a95") : i % 3 === 0 ? new Color("#e07a4f") : ROOF);
     });
   }
   group.add(roofs);
 
-  const trunk = new InstancedMesh(geo(bin, new CylinderGeometry(0.18, 0.25, 2, 6).translate(0, 1, 0)), toon(bin, TIMBER), Math.max(1, trees.length));
-  const crown = new InstancedMesh(geo(bin, new SphereGeometry(1.4, 10, 8).translate(0, 2.8, 0)), toon(bin, LEAF), Math.max(1, trees.length));
+  // Park trees round the plaza: the backdrop every avenue station looks into.
+  for (let i = 0; i < 260; i++) {
+    const a = hash(i * 12.9) * Math.PI * 2;
+    const r = 68 + hash(i * 4.7) * (R - 82);
+    const x = Math.cos(a) * r;
+    const z = Math.sin(a) * r;
+    if (sightlines.some((s) => segDist(x, z, s) < 3)) continue;
+    trees.push({ x, z, s: 0.9 + hash(i * 6.1) * 0.8 });
+  }
+  // Street trees along the new city's roads.
+  for (const s of roads.slice(5)) {
+    const len = Math.hypot(s.bx - s.ax, s.bz - s.az);
+    const nx = -(s.bz - s.az) / len;
+    const nz = (s.bx - s.ax) / len;
+    for (let t = 10; t < len; t += 11) {
+      for (const side of [-1, 1]) {
+        const x = s.ax + ((s.bx - s.ax) * t) / len + nx * 6.5 * side;
+        const z = s.az + ((s.bz - s.az) * t) / len + nz * 6.5 * side;
+        if (!layout.sites.some((st) => Math.hypot(x - st.position.x, z - st.position.z) < st.def.clear)) trees.push({ x, z, s: 0.8 });
+      }
+    }
+  }
+
+  // Ghibli trees: lumpy clusters of leaf, in several greens, that sway in
+  // the breeze — the top more than the base.
+  const wind = { value: 0 };
+  const lumps = mergeGeometries([
+    new IcosahedronGeometry(1.35, 1).translate(0, 2.9, 0),
+    new IcosahedronGeometry(0.95, 1).translate(0.85, 3.5, 0.3),
+    new IcosahedronGeometry(1.0, 1).translate(-0.75, 3.35, -0.35),
+    new IcosahedronGeometry(0.8, 1).translate(0.1, 4.2, -0.2),
+  ]);
+  const crownMat = toon(bin, 0xffffff);
+  crownMat.onBeforeCompile = (shader) => {
+    shader.uniforms.uWind = wind;
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nuniform float uWind;")
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+        #ifdef USE_INSTANCING
+          vec2 root = vec2(instanceMatrix[3][0], instanceMatrix[3][2]);
+          float gust = sin(uWind * 1.1 + root.x * 0.07 + root.y * 0.05) * 0.6 + sin(uWind * 2.7 + root.x * 0.13) * 0.25;
+          float bend = max(transformed.y - 2.0, 0.0);
+          transformed.x += gust * 0.09 * bend;
+          transformed.z += gust * 0.04 * bend;
+        #endif`
+      );
+  };
+  crownMat.customProgramCacheKey = () => "city-crowns";
+  const trunk = new InstancedMesh(geo(bin, new CylinderGeometry(0.18, 0.26, 2.2, 6).translate(0, 1.1, 0)), toon(bin, TIMBER), Math.max(1, trees.length));
+  const crown = new InstancedMesh(geo(bin, lumps), crownMat, Math.max(1, trees.length));
+  const greens = [LEAF, new Color("#6db04d"), new Color("#3f8a4a"), new Color("#86bf55")];
   {
     const o = new Object3D();
     trees.forEach((t, i) => {
       o.position.set(t.x, 0, t.z);
+      o.rotation.set(0, hash(i * 3.7) * Math.PI * 2, 0);
       o.scale.setScalar(t.s);
       o.updateMatrix();
       trunk.setMatrixAt(i, o.matrix);
       crown.setMatrixAt(i, o.matrix);
+      crown.setColorAt(i, greens[i % greens.length]);
     });
   }
   group.add(trunk, crown);
+
+  // Rooftop gardens on the new city's lower towers.
+  const gardened = newBlocks.filter((b, i) => b.h < 34 && hash(i * 17.3) > 0.45);
+  const gardens = new InstancedMesh(box, toon(bin, 0xffffff), Math.max(1, gardened.length));
+  {
+    const o = new Object3D();
+    gardened.forEach((b, i) => {
+      o.position.set(b.x, b.h, b.z);
+      o.scale.set(b.w * 0.86, 0.45, b.d * 0.86);
+      o.updateMatrix();
+      gardens.setMatrixAt(i, o.matrix);
+      gardens.setColorAt(i, greens[i % greens.length]);
+    });
+  }
+  group.add(gardens);
 
   // --- the elevated train: the new city keeps moving ---------------------------------
   const TRACK_R = 158;
@@ -412,6 +537,7 @@ export function buildCity(layout: CityLayout): City {
       });
       head.group.rotation.y = Math.PI * 0.1 + Math.sin(time * 0.05) * 0.5;
       head.setEyes(0.85 + Math.sin(time * 1.3) * 0.15);
+      wind.value = time;
     },
     dispose() {
       oldMesh.dispose();
@@ -419,6 +545,8 @@ export function buildCity(layout: CityLayout): City {
       roofs.dispose();
       trunk.dispose();
       crown.dispose();
+      gardens.dispose();
+      lumps.dispose();
       pylons.dispose();
       ripples.dispose();
       bin.dispose();
