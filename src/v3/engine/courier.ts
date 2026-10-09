@@ -138,13 +138,14 @@ export class Courier {
     this.body.legL.joint.rotation.x = 0.4;
     this.body.legR.joint.rotation.x = 0.6;
     this.body.head.setEyes(1);
-    for (const f of this.flames) f.scale.set(1, 0.7 + k * 1.6 + Math.sin(time * 40 + f.id) * 0.12, 1);
+    for (const f of this.flames) f.scale.set(1, 0.6 + k * 0.8 + Math.sin(time * 40 + f.id) * 0.1, 1);
 
-    this.updateScarf(dt, pos, right);
+    this.updateScarf(dt, right);
   }
 
-  private updateScarf(dt: number, pos: Vector3, right: Vector3): void {
-    const neck = new Vector3(0, 1.25 * 0.62, -0.12).applyEuler(this.object.rotation).add(pos);
+  private updateScarf(dt: number, right: Vector3): void {
+    this.object.updateMatrixWorld();
+    const neck = this.body.neck.getWorldPosition(new Vector3());
     // Each point trails the one before it with a little droop.
     if (this.trail.length !== SCARF) this.trail = Array.from({ length: SCARF }, () => neck.clone());
     this.trail[0].copy(neck);

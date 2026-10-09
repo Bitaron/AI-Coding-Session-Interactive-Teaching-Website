@@ -32,7 +32,7 @@ const CUES: Record<string, Record<string, CityCue>> = {
     "token-generation": {
       rig: "head",
       preset: { mode: "tokens" },
-      caption: "Across the river, a robot reads the sentence so far. Candidate words hover over its head — bar height is probability — and the chosen one is spoken onto the ticker. Raise temperature and the long shots start winning.",
+      caption: "Across the river, a robot reads the sentence so far. Candidate words rise beside its head — bar height is probability — and the chosen one is spoken onto the ticker. Raise temperature and the long shots start winning.",
     },
     stateless: {
       rig: "head",
@@ -42,12 +42,12 @@ const CUES: Record<string, Record<string, CityCue>> = {
     "model-categories": {
       rig: "robot",
       preset: { mode: "trio" },
-      caption: "Three builds: a small quick bot, a balanced one, a big deliberate mech. Thought bubbles are effort — how many each one thinks before it acts.",
+      caption: "Three builds: a small quick bot, a balanced one, a big deliberate one. Thought bubbles are effort — how many each one thinks before it acts.",
     },
     providers: {
       rig: "gauges",
       keep: ["dials"],
-      caption: "One effort lever, five gauges. Each needle can only rest on a notch its model has — orange means it snapped to the nearest one.",
+      caption: "Every company builds its own robot — the two Groks are siblings. One effort lever is asked of all of them, but each dial can only rest on a notch its model has: when it snaps to the nearest one, needle and lamp turn orange and the robot shakes its head.",
     },
     "token-economics": {
       rig: "head",
@@ -65,7 +65,7 @@ const CUES: Record<string, Record<string, CityCue>> = {
     "context-window": {
       rig: "head",
       preset: { mode: "drive" },
-      caption: "The head is open: its context is a drive. Each token is written as a block on the platter. Fill it with the slider — the middle fades, and past the green track the blocks turn orange.",
+      caption: "Lid open on a hard drive: that is its context. Each token is written as a block on the platter. Fill it with the slider — the middle fades, and past the green track the blocks turn orange.",
     },
     agents: {
       rig: "robot",
@@ -82,7 +82,7 @@ const CUES: Record<string, Record<string, CityCue>> = {
       rig: "cartridges",
       preset: { mode: "skills" },
       keep: ["items", "spots"],
-      caption: "Skill cartridges sit in a rack showing only their label. Point at one to plug it into the head — its instructions unfold only then. grill-with-docs pulls in two more.",
+      caption: "Skill cartridges sit in a rack showing only their label. Point at one to plug it into the head — its instructions unfold only then. grill-with-docs lifts two more out of the rack.",
     },
     hooks: {
       rig: "gate",
@@ -98,12 +98,12 @@ const CUES: Record<string, Record<string, CityCue>> = {
     },
     graph: {
       rig: "transit",
-      caption: "A metro line through plan → implement → test. The train fails twice, loops through fix → re-test, then reaches done.",
+      caption: "A metro line: write code → run tests → tests pass? The train fails twice — out to fix, back through run tests on the dashed track — before the junction sends it on to done.",
     },
     memory: {
       rig: "archive",
       preset: { mode: "memory" },
-      caption: "Point at a store to recall from it. The heap hands back a different sheet each time; the indexed archives hand back the right one.",
+      caption: "Point at a store to recall from it. The heap hands back a different sheet each time; the indexed stores hand back the right drawer.",
     },
     plugins: {
       rig: "cartridges",
@@ -131,7 +131,7 @@ const CUES: Record<string, Record<string, CityCue>> = {
     tdd: {
       rig: "printer",
       keep: ["gates", "calls", "spots"],
-      caption: "The test is the mould, outlined red. The printer arm prints, misses, reshapes and prints again — until the part drops in (green).",
+      caption: "The test is a slot in the fixture, outlined red. The printer arm prints a part and tries it — wrong shape, then an arm too long — until the third drops in and the fixture turns green; a refactored print still fits.",
     },
     guardrails: {
       rig: "conveyor",
@@ -148,34 +148,34 @@ const CUES: Record<string, Record<string, CityCue>> = {
   backend: {
     brief: site("warehouse", 0, "A warehouse for a file manager, in the east docks. Kickoff: the survey drone stakes out the plot; “too big for one session” splits it into lots — one per decision. Each screenshot builds one piece; point at a screenshot to see which."),
     grilling: site("warehouse", 1, "Eight screenshots, eight foundation slabs. A slab with an orange edge is a decision the human overrode."),
-    tracker: site("warehouse", 2, "The site board goes up: issue #1 and its decision tickets as lights. Four screenshots, four parts of the board."),
+    tracker: site("warehouse", 2, "The site board goes up: issue #1 and its decision tickets #11–#19 as lights. Four screenshots: legs, panel, header, lights."),
     baseline: site("warehouse", 3, "Ticket #11: the first corner column. A helper drone researched in the background while the crew asked the human."),
-    handoff: site("warehouse", 4, "Computer 2's crew hands the site log to Computer 1's: the log flies across, and each screenshot is one step of the handover."),
-    modules: site("warehouse", 5, "Module structure as the frame: each screenshot raises part of the steel, until the final tree stands."),
+    handoff: site("warehouse", 4, "Computer 2's cabin writes the missing state down — tracker doc, AGENTS.md pointer — packs it, and the crate flies to Computer 1, which lights up the frontier."),
+    modules: site("warehouse", 5, "Module structure as the frame: five portal frames, the beams, the rafters — then a green flag: ticket closed."),
     "context-hygiene": site("warehouse", 6, "Context hygiene: each screenshot hauls a pile of clutter off site and lays clean floor in its place."),
     "storage-contract": site("warehouse", 7, "Two storage backends, one loading dock. Each screenshot fits a piece of the contract; whichever module the property selects docks."),
     decisions: site("warehouse", 8, "Every decision in its own session: each screenshot adds a mezzanine floor."),
     "spec-to-code": site("warehouse", 9, "Map → spec → tickets → scaffold: wall panels and roof go on, one per screenshot."),
     refusal: site("warehouse", 10, "A guardrail that holds: the security gate goes in, and the same request in different words meets the same barrier."),
-    built: site("warehouse", 11, "What got built: the finished warehouse, its eleven module bays lit."),
+    built: site("warehouse", 11, "What got built: the façade sign and eleven module bays lit — the realised module tree."),
   },
 
   frontend: {
-    kickoff: site("billboard", 0, "This site is the example — so it gets a billboard on the plaza. The session starts and the mast goes up. Each screenshot builds one piece; point at a screenshot to see which."),
+    kickoff: site("billboard", 0, "This site is the example — so it gets a billboard on the plaza. The kickoff screenshot raises the mast. Each screenshot builds one piece; point at a screenshot to see which."),
     grill: site("billboard", 1, "Grilled with recommendations: frame and catwalk, one per screenshot."),
-    "round-one": site("billboard", 2, "Round 1: the screen goes up and tries on outfits — the real prototype screenshots, one after another."),
+    "round-one": site("billboard", 2, "Round 1: the screen goes up and tries on outfits — the real prototype screenshots, one after another — and an inspection drone docks for the Playwright run."),
     traceable: site("billboard", 3, "Research made traceable: a citation plate bolted under the screen for each screenshot."),
     "round-two": site("billboard", 4, "Round 2, narrower and sharper: new variants flash on the screen while lights and speakers fill in the frame."),
-    "browser-testing": site("billboard", 5, "The inspection drone sweeps the screen the way Playwright drove the browser; the specificity bug lights orange."),
+    "browser-testing": site("billboard", 5, "The inspection drone sweeps along the top of the screen the way Playwright drove the browser; the specificity bug lights orange."),
     decision: site("billboard", 6, "The decision — B plus D's sidebar — and the billboard lights up with v1 of this guide, the site that direction became."),
   },
 
   "existing-project": {
-    ask: site("house", 1, "Back across the river: the old house from the start. A robot with a toolbox runs for the door; the owner stops it — who may export what?"),
+    ask: site("house", 1, "Back across the river: the old house from the start. A robot with a toolbox runs for the door; the owner stops it: “Hold on — don’t start yet.” Who may export what?"),
     context: site("house", 2, "The robot scans the house; the X-ray shows the tangle it read. Orange flags are what the owner pointed out — the scan walked straight past them."),
     "agent-md": site("house", 3, "A manual plate by the door: the robot's two lines, then the owner's two."),
     plan: site("house", 4, "The renovation plan unfolds over the house as a hologram; the last panel is the one the owner had to add."),
-    review: site("house", 5, "The renovation: old parts swap for new ones, the review scanner sends flagged ones back until they return green — and the old house is a new one."),
+    review: site("house", 5, "The renovation: old parts swap for new ones, the review scanner follows each one. The door — the export route without a session check — comes back once, then returns green. The old house is a new one."),
   },
 
   sandbox: {

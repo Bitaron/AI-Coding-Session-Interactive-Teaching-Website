@@ -4,6 +4,7 @@ import { edition } from "./core/edition";
 import { store, type Quality } from "./core/state";
 import { Dial } from "./ui/dial";
 import { anyDialogOpen, mountDialogs } from "./ui/dialogs";
+import { mountFinder, type Finder } from "./ui/finder";
 import { mountHotspots } from "./ui/hotspots";
 import { el, escapeHtml } from "./ui/markup";
 import { Panel } from "./ui/panel";
@@ -26,9 +27,11 @@ export interface BootOptions {
   loadEngine: () => Promise<EngineClass>;
   /** Extra class on the root, for edition-specific styles. */
   rootClass?: string;
+  /** A top-bar button that opens a searchable list of every page. */
+  finder?: boolean;
 }
 
-export function boot({ loadEngine, rootClass }: BootOptions): void {
+export function boot({ loadEngine, rootClass, finder: withFinder }: BootOptions): void {
   const root = document.getElementById("app")!;
   root.className = rootClass ? `v2 ${rootClass}` : "v2";
 
@@ -63,6 +66,8 @@ export function boot({ loadEngine, rootClass }: BootOptions): void {
   const dial = new Dial(root);
   mountDialogs(root);
   mountSound();
+  const finder: Finder | null = withFinder ? mountFinder(root) : null;
+  if (finder) top.querySelector(".v2-controls")!.prepend(finder.button);
 
   // --- controls ------------------------------------------------------------
 
@@ -157,7 +162,11 @@ export function boot({ loadEngine, rootClass }: BootOptions): void {
 
   document.addEventListener("keydown", (e) => {
     const t = e.target as HTMLElement;
-    if (anyDialogOpen() || t.matches("input, textarea, select") || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (anyDialogOpen() || finder?.isOpen() || t.matches("input, textarea, select") || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (finder && e.key === "/") {
+      e.preventDefault();
+      return finder.open();
+    }
     if (e.key === "Escape") dial.toggleIndex(false);
     if (t.closest(".v2-dial-svg")) return; // the dial handles its own arrows
     if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === "j") dial.stepBy(1);

@@ -16,4 +16,4 @@ setEdition({
 });
 applyCityCues();
 
-boot({ rootClass: "v3", loadEngine: async () => (await import("./engine/engine")).Engine });
+boot({ rootClass: "v3", finder: true, loadEngine: async () => (await import("./engine/engine")).Engine });

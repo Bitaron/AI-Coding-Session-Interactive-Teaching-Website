@@ -125,8 +125,8 @@ export function layoutCity(sections: Section[], siteDefs: Record<string, SiteDef
       }
       // The camera stands outside the station looking in, so the backdrop
       // is always the new city: the plaza and the central tower.
-      const eye = position.clone().addScaledVector(outward, 13).add(new Vector3(0, 5.2, 0));
-      const target = position.clone().add(new Vector3(0, 2.0, 0));
+      const eye = position.clone().addScaledVector(outward, 17).add(new Vector3(0, 6.6, 0));
+      const target = position.clone().add(new Vector3(0, 2.4, 0));
       stations.push({
         route,
         index: index++,

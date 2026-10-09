@@ -119,11 +119,11 @@ export class InkPass {
             float rays = 150.0;
             float id = floor(ang * rays);
             float seed = hash1(id + floor(uTime * 14.0) * 7.31);
-            float start = 0.42 + hash1(id * 3.7) * 0.5;
+            float start = 0.3 + hash1(id * 3.7) * 0.4;
             float width = abs(fract(ang * rays) - 0.5) * 2.0;
             float line = step(0.72, seed) * (1.0 - smoothstep(0.0, 0.35, width));
             line *= smoothstep(start, start + 0.18, length(p));
-            col = mix(col, uInk, line * uSpeed * 0.7);
+            col = mix(col, uInk, line * uSpeed * 0.85);
           }
 
           // --- paper: static fibre plus a slow grain

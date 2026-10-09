@@ -155,7 +155,7 @@ export class Engine {
     const vfov = (this.camera.fov * Math.PI) / 180;
     const halfH = Math.atan(Math.tan(vfov / 2) * aspect);
     const offset = station.eye.clone().sub(station.target);
-    const width = station.site ? offset.length() * 0.62 : 7.2;
+    const width = station.site ? offset.length() * 0.62 : 8.6;
     const need = width / Math.tan(halfH);
     const k = Math.min(2.8, Math.max(1, need / offset.length()));
     return station.target.clone().addScaledVector(offset, k);
@@ -335,8 +335,8 @@ export class Engine {
   private updateFog(): void {
     const fog = this.scene.fog as Fog;
     const h = Math.max(0, this.camera.position.y);
-    fog.near = 45 + h * 1.1;
-    fog.far = 240 + h * 2.2;
+    fog.near = 45 + h * 2.2;
+    fog.far = 260 + h * 3.2;
     this.post.lineFar = 110 + h * 1.5;
   }
 
