@@ -1,3 +1,4 @@
+import { EDITIONS } from "../editions";
 import { sections } from "./content/sections";
 import type { Section } from "./content/types";
 import { edition } from "./core/edition";
@@ -44,7 +45,11 @@ export function boot({ loadEngine, rootClass, finder: withFinder }: BootOptions)
   top.innerHTML = `
     <a class="v2-brand" data-route href="${path(null)}">${edition.brand}</a>
     <div class="v2-controls">
-      <a class="v2-ctl" href="${import.meta.env.BASE_URL}" title="The original, page-by-page guide">v1</a>
+      <nav class="v2-editions" aria-label="Editions">${EDITIONS.map((e) =>
+        e.slug === edition.slug
+          ? `<span class="v2-ctl" aria-current="page" title="${e.title} (you are here)">${e.slug}</span>`
+          : `<a class="v2-ctl" href="${e.href}" title="${e.title}">${e.slug}</a>`
+      ).join("")}</nav>
       <button type="button" class="v2-ctl" data-ctl="quality" title="Rendering quality"></button>
       <button type="button" class="v2-ctl" data-ctl="sound" aria-pressed="false" title="Sound"></button>
     </div>`;

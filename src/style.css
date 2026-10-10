@@ -237,6 +237,39 @@ code.inline {
   min-width: 0;
 }
 
+/* v1 · v2 · v3: the same material three ways; this edition is filled. */
+.editions {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  font: 0.7rem/1 "SF Mono", Menlo, monospace;
+  z-index: 2;
+}
+
+.editions > * {
+  padding: 7px 9px;
+  border: 1px solid #cabf9f;
+  background: #f7f5f0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.editions > * + * {
+  margin-left: -1px;
+}
+
+.editions a:hover {
+  border-color: #171614;
+  position: relative;
+}
+
+.editions [aria-current] {
+  background: #171614;
+  border-color: #171614;
+  color: #f7f5f0;
+}
+
 .site-footer {
   margin-top: 4vh;
   padding-top: 1.2rem;

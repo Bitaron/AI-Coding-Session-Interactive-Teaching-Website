@@ -101,6 +101,11 @@ button { font: inherit; color: inherit; }
 .v2-ctl[aria-pressed="true"] { border-color: var(--green); color: var(--green); }
 .v2-ctl:disabled { opacity: 0.6; cursor: default; }
 
+/* v1 · v2 · v3 as one switch; the edition you're in is filled. */
+.v2-editions { display: flex; }
+.v2-editions .v2-ctl + .v2-ctl { margin-left: -1px; }
+.v2-editions [aria-current] { background: var(--ink); border-color: var(--ink); color: var(--paper); cursor: default; }
+
 /* --- reading panel ------------------------------------------------------------ */
 
 .v2-panel {
