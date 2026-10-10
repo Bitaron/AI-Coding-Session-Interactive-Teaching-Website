@@ -33,6 +33,7 @@ export class Panel {
     this.root.append(this.body);
     scrollCue(this.root);
     store.select((s) => s.route, (r) => this.render(r));
+    window.addEventListener("resize", () => this.fitTitle());
     events.on("arrived", (r) => {
       if (r && this.replay && store.get().route === r) this.replay.play();
       this.root.classList.add("arrived");
@@ -53,10 +54,26 @@ export class Panel {
       this.root.scrollTop = 0;
       if (!route) this.renderMap();
       else this.renderStep(findSection(route.sectionId)!, route);
+      this.fitTitle();
       this.body.classList.remove("leaving");
     };
     if (store.get().reducedMotion || !this.body.childElementCount) swap();
     else window.setTimeout(swap, 170);
+  }
+
+  /**
+   * A long word in a title ("recommendations,", set in capitals in v3) can
+   * be wider than the column. Shrink the title until its widest word fits,
+   * so nothing is cut off or pushes the panel sideways.
+   */
+  private fitTitle(): void {
+    const h = this.body.querySelector<HTMLElement>(".v2-title");
+    if (!h) return;
+    h.style.fontSize = "";
+    h.style.overflowWrap = "";
+    let size = Math.ceil(parseFloat(getComputedStyle(h).fontSize));
+    while (h.scrollWidth > h.clientWidth + 1 && size > 18) h.style.fontSize = `${(size -= 1)}px`;
+    if (h.scrollWidth > h.clientWidth + 1) h.style.overflowWrap = "anywhere";
   }
 
   private renderMap(): void {
