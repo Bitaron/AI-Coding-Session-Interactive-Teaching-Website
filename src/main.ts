@@ -2,6 +2,7 @@ import "./style.css";
 import { sections, findSection, nextSection } from "./sections";
 import { onRouteChange, navigate, routePath, type Route } from "./router";
 import { initImageModal, closeImageModal } from "./image-modal";
+import { EDITIONS } from "./editions";
 
 initImageModal();
 
@@ -9,6 +10,11 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 
 app.innerHTML = `
   <div class="shell" id="shell">
+    <nav class="editions" aria-label="Editions">${EDITIONS.map((e) =>
+      e.slug === "v1"
+        ? `<span aria-current="page" title="${e.title} (you are here)">${e.slug}</span>`
+        : `<a href="${e.href}" title="${e.title}">${e.slug}</a>`
+    ).join("")}</nav>
     <aside class="sidebar">
       <button class="toggle" id="toggle" aria-label="Expand navigation">☰</button>
       <div class="dot-rail" id="dotRail"></div>
@@ -34,6 +40,12 @@ app.innerHTML = `
       </div>
       <footer class="site-footer">
         <span>AI Coding Session — teaching material, not a product</span>
+        <span class="site-footer-links">
+          Also as:
+          ${EDITIONS.filter((e) => e.slug !== "v1")
+            .map((e) => `<a href="${e.href}" title="${e.title}">${e.slug} · ${e.name}</a>`)
+            .join("")}
+        </span>
         <span class="site-footer-links">
           <a href="https://github.com/Bitaron/agentic-coding-guide" target="_blank" rel="noopener">Source</a>
           <a href="https://github.com/Bitaron/agentic-coding-guide/issues" target="_blank" rel="noopener">Report an issue</a>

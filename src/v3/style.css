@@ -131,10 +131,11 @@
 
 .v3 .v2-ctl { white-space: nowrap; }
 
-/* Narrow phones: keep pages + sound; quality stays on auto, which adapts itself. */
+.v3 .v2-editions [aria-current] { color: var(--caption); }
+
+/* Narrow phones: keep pages, editions and sound; quality stays on auto, which adapts itself. */
 @media (max-width: 520px) {
-  .v3 .v2-ctl[data-ctl="quality"],
-  .v3 a.v2-ctl { display: none; }
+  .v3 .v2-ctl[data-ctl="quality"] { display: none; }
 }
 
 @media (max-width: 899px) {

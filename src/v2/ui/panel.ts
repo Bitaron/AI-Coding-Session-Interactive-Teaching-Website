@@ -1,3 +1,4 @@
+import { EDITIONS } from "../../editions";
 import { findSection, globalIndex, sections, totalSteps } from "../content/sections";
 import type { Section, Step } from "../content/types";
 import { edition } from "../core/edition";
@@ -100,13 +101,10 @@ export class Panel {
       "Scroll or drag the dial to travel · ← → keys step · <kbd>M</kbd> map · drag the scene to look around"
     );
     b.append(how);
-    b.append(
-      el(
-        "p",
-        "v2-legacy",
-        `Prefer pages? <a href="${import.meta.env.BASE_URL}">The original guide</a> has the same material as plain steps.`
-      )
-    );
+    const others = EDITIONS.filter((e) => e.slug !== edition.slug)
+      .map((e) => `<a href="${e.href}" title="${escapeHtml(e.title)}">${e.slug} · ${e.name}</a>`)
+      .join(" or ");
+    b.append(el("p", "v2-legacy", `The same material, another way in: ${others}.`));
   }
 
   private renderStep(section: Section, route: Route): void {
